@@ -1,17 +1,11 @@
-{
-  "name": "base-whale-app",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "next": "13.4.6",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "wagmi": "^1.4.13",
-    "viem": "^0.7.0"
-  }
+"dependencies": {
+  "next": "13.4.6",
+  "react": "18.2.0",
+  "react-dom": "18.2.0",
+
+  "wagmi": "^2.0.0",
+  "@wagmi/core": "^2.0.0",
+  "viem": "^0.7.0",
+
+  "@farcaster/miniapp-sdk": "^1.0.0"
 }
