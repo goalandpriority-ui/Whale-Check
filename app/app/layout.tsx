@@ -1,20 +1,21 @@
-"use client";
+'use client'
 
-import { WagmiConfig } from "wagmi";
-import { config } from "./wagmi";
+import { WagmiProvider } from 'wagmi'
+import { config } from './wagmi'
+import { ReactNode } from 'react'
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode
 }) {
   return (
     <html lang="en">
       <body>
-        <WagmiConfig config={config}>
+        <WagmiProvider config={config}>
           {children}
-        </WagmiConfig>
+        </WagmiProvider>
       </body>
     </html>
-  );
+  )
 }
