@@ -1,4 +1,5 @@
-import { createConfig, http } from 'wagmi'
+import { createConfig } from 'wagmi'
+import { http } from 'viem'
 import { base } from 'wagmi/chains'
 import { injected, coinbaseWallet } from 'wagmi/connectors'
 
