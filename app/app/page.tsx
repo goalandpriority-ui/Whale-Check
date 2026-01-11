@@ -9,22 +9,17 @@ export default function HomePage() {
   const { disconnect } = useDisconnect()
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1>🐋 Whale Check</h1>
-
-      {!isConnected ? (
+    <div>
+      {isConnected ? (
         <>
-          <button
-            onClick={() =>
-              connect({
-                connector: injected(),
-              })
-            }
-          >
+          <p>Connected: {address}</p>
+          <button onClick={() => disconnect()}>Disconnect</button>
+        </>
+      ) : (
+        <>
+          <button onClick={() => connect({ connector: injected() })}>
             Connect MetaMask
           </button>
-
-          <br /><br />
 
           <button
             onClick={() =>
@@ -35,21 +30,10 @@ export default function HomePage() {
               })
             }
           >
-            Connect Coinbase Wallet
-          </button>
-        </>
-      ) : (
-        <>
-          <p><b>Connected Address:</b></p>
-          <p>{address}</p>
-
-          <br />
-
-          <button onClick={() => disconnect()}>
-            Disconnect
+            Connect Coinbase
           </button>
         </>
       )}
-    </main>
+    </div>
   )
 }
