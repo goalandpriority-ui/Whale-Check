@@ -1,38 +1,32 @@
 'use client'
 
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
-import { injected, coinbaseWallet } from 'wagmi/connectors'
 
 export default function HomePage() {
   const { address, isConnected } = useAccount()
-  const { connect } = useConnect()
+  const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
 
   return (
-    <div>
+    <div style={{ padding: 20 }}>
+      <h1>🐳 Whale Check</h1>
+
       {isConnected ? (
         <>
           <p>Connected: {address}</p>
-          <button onClick={() => disconnect()}>Disconnect</button>
+          <button onClick={() => disconnect()}>
+            Disconnect
+          </button>
         </>
       ) : (
-        <>
-          <button onClick={() => connect({ connector: injected() })}>
-            Connect MetaMask
-          </button>
-
+        connectors.map((connector) => (
           <button
-            onClick={() =>
-              connect({
-                connector: coinbaseWallet({
-                  appName: 'Whale Check',
-                }),
-              })
-            }
+            key={connector.uid}
+            onClick={() => connect({ connector })}
           >
-            Connect Coinbase
+            Connect {connector.name}
           </button>
-        </>
+        ))
       )}
     </div>
   )
