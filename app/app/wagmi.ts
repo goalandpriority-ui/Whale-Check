@@ -1,3 +1,5 @@
+'use client'
+
 import { createConfig } from 'wagmi'
 import { http } from 'viem'
 import { base } from 'wagmi/chains'
@@ -8,10 +10,10 @@ export const config = createConfig({
   connectors: [
     injected(),
     coinbaseWallet({
-      appName: 'Whale Check',
-    }),
+      appName: 'Whale Check'
+    })
   ],
   transports: {
-    [base.id]: http(),
-  },
+    [base.id]: http()
+  }
 })
