@@ -1,19 +1,22 @@
 'use client'
 
-import { createConfig } from 'wagmi'
-import { http } from 'viem'
+import { configureChains, createConfig } from 'wagmi'
 import { base } from 'wagmi/chains'
 import { injected, coinbaseWallet } from 'wagmi/connectors'
+import { publicProvider } from 'wagmi/providers/public'
+
+const { chains, publicClient } = configureChains(
+  [base],
+  [publicProvider()]
+)
 
 export const config = createConfig({
-  chains: [base],
+  autoConnect: true,
   connectors: [
     injected(),
     coinbaseWallet({
-      appName: 'Whale Check'
-    })
+      appName: 'Whale Check',
+    }),
   ],
-  transports: {
-    [base.id]: http()
-  }
+  publicClient,
 })
