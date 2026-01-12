@@ -15,7 +15,7 @@
 
     "wagmi": "1.4.12",
     "@wagmi/core": "1.4.12",
-    "@wagmi/connectors": "1.4.12",
+    "@wagmi/connectors": "1.3.10",
 
     "viem": "1.21.4",
 
