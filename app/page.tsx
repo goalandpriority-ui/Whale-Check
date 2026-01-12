@@ -1,33 +1,38 @@
-'use client'
+"use client";
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 
-export default function HomePage() {
-  const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
-  const { disconnect } = useDisconnect()
+export default function Home() {
+  const { address, isConnected } = useAccount();
+  const { connectors, connect } = useConnect();
+  const { disconnect } = useDisconnect();
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>🐳 Whale Check</h1>
+    <main style={{ padding: 20 }}>
+      <h1>🐋 Whale Check</h1>
 
-      {isConnected ? (
-        <>
-          <p>Connected: {address}</p>
-          <button onClick={() => disconnect()}>
-            Disconnect
-          </button>
-        </>
-      ) : (
-        connectors.map((connector) => (
-          <button
-            key={connector.uid}
-            onClick={() => connect({ connector })}
-          >
-            Connect {connector.name}
-          </button>
-        ))
+      {!isConnected && (
+        <div>
+          {connectors.map((connector) => (
+            <button
+              key={connector.uid}
+              onClick={() => connect({ connector })}
+              style={{ marginRight: 10 }}
+            >
+              Connect {connector.name}
+            </button>
+          ))}
+        </div>
       )}
-    </div>
-  )
+
+      {isConnected && (
+        <div>
+          <p>Connected Address:</p>
+          <b>{address}</b>
+          <br />
+          <button onClick={() => disconnect()}>Disconnect</button>
+        </div>
+      )}
+    </main>
+  );
 }
