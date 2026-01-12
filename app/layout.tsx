@@ -1,20 +1,21 @@
-'use client'
+import "./globals.css";
+import Providers from "./providers";
 
-import { WagmiConfig } from 'wagmi'
-import { config } from './wagmi'
+export const metadata = {
+  title: "Whale Check",
+  description: "Wallet Whale Checker",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
       <body>
-        <WagmiConfig config={config}>
-          {children}
-        </WagmiConfig>
+        <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }
