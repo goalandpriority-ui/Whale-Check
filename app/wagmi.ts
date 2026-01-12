@@ -1,28 +1,13 @@
-'use client'
-
-import { configureChains, createConfig } from 'wagmi'
-import { base } from 'wagmi/chains'
-import { InjectedConnector } from 'wagmi/connectors/injected'
-import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
-import { publicProvider } from 'wagmi/providers/public'
-
-const { chains, publicClient } = configureChains(
-  [base],
-  [publicProvider()]
-)
+import { http, createConfig } from "wagmi";
+import { mainnet } from "wagmi/chains";
+import { injected } from "wagmi/connectors";
 
 export const config = createConfig({
-  autoConnect: true,
+  chains: [mainnet],
   connectors: [
-    new InjectedConnector({
-      chains,
-    }),
-    new CoinbaseWalletConnector({
-      chains,
-      options: {
-        appName: 'Whale Check',
-      },
-    }),
+    injected()
   ],
-  publicClient,
-})
+  transports: {
+    [mainnet.id]: http()
+  }
+});
