@@ -1,15 +1,10 @@
-export default function Home() {
+"use client";
+
+export default function Page() {
   return (
-    <main style={{
-      minHeight: "100vh",
-      backgroundColor: "#0b1220",
-      color: "white",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "24px"
-    }}>
-      🐳 Whale Check App is Live
-    </main>
+    <div style={{ color: "white", padding: "20px" }}>
+      <h1>🐳 Whale Check</h1>
+      <p>App is working fine 🚀</p>
+    </div>
   );
 }
