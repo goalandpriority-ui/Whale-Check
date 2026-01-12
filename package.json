@@ -5,19 +5,20 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "13.4.19",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "wagmi": "1.4.13",
+
+    "wagmi": "1.4.12",
+    "@wagmi/core": "1.4.12",
+    "@wagmi/connectors": "1.4.12",
+
     "viem": "1.21.4",
-    "@farcaster/miniappp-sdk": "^0.1.5"
-  },
-  "devDependencies": {
-    "typescript": "5.0.4",
-    "@types/react": "18.2.0",
-    "@types/node": "20.8.0"
+
+    "@farcaster/miniapp-sdk": "^0.1.5"
   }
 }
