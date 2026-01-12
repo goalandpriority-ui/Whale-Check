@@ -1,3 +1,6 @@
+import "./globals.css";
+import { Providers } from "./providers";
+
 export const metadata = {
   title: "Whale Check",
   description: "Base Whale Check App",
@@ -10,37 +13,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        style={{
-          margin: 0,
-          padding: 0,
-          minHeight: "100vh",
-          backgroundColor: "#0b1220",
-          color: "white",
-          fontFamily: "sans-serif",
-        }}
-      >
-        {/* Header */}
-        <header
-          style={{
-            padding: "16px",
-            fontSize: "20px",
-            fontWeight: "bold",
-            borderBottom: "1px solid #1f2937",
-          }}
-        >
-          🐳 Whale Check
-        </header>
+      <body>
+        <Providers>
+          <header
+            style={{
+              padding: "16px",
+              fontSize: "20px",
+              fontWeight: "bold",
+              borderBottom: "1px solid #1f2937",
+            }}
+          >
+            🐳 Whale Check
+          </header>
 
-        {/* Page Content */}
-        <main
-          style={{
-            minHeight: "calc(100vh - 60px)",
-            padding: "24px",
-          }}
-        >
-          {children}
-        </main>
+          <main style={{ padding: "24px" }}>{children}</main>
+        </Providers>
       </body>
     </html>
   );
