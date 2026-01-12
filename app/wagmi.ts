@@ -2,7 +2,8 @@
 
 import { configureChains, createConfig } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { injected, coinbaseWallet } from 'wagmi/connectors'
+import { InjectedConnector } from 'wagmi/connectors/injected'
+import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
 import { publicProvider } from 'wagmi/providers/public'
 
 const { chains, publicClient } = configureChains(
@@ -13,9 +14,14 @@ const { chains, publicClient } = configureChains(
 export const config = createConfig({
   autoConnect: true,
   connectors: [
-    injected(),
-    coinbaseWallet({
-      appName: 'Whale Check',
+    new InjectedConnector({
+      chains,
+    }),
+    new CoinbaseWalletConnector({
+      chains,
+      options: {
+        appName: 'Whale Check',
+      },
     }),
   ],
   publicClient,
