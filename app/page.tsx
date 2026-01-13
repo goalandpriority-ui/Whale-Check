@@ -1,9 +1,25 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import WalletStatus from "./components/WalletStatus";
 import Leaderboard from "./components/Leaderboard";
 
-export default function HomePage() {
+export default function Home() {
+  const [apiData, setApiData] = useState<any>(null);
+
+  // STEP 9 – API test (backend ready nu confirm panna)
+  useEffect(() => {
+    fetch("/api/whales")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Whale API data:", data);
+        setApiData(data);
+      })
+      .catch((err) => {
+        console.error("API error:", err);
+      });
+  }, []);
+
   return (
     <main
       style={{
@@ -11,31 +27,31 @@ export default function HomePage() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        padding: "40px 16px",
-        textAlign: "center",
+        padding: "30px",
+        background: "#f9f9f9",
       }}
     >
       {/* Title */}
-      <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>
-        🐋 Whale Check
+      <h1 style={{ fontSize: "28px", marginBottom: "10px" }}>
+        🐋 Base Whale Check
       </h1>
 
-      {/* Subtitle */}
-      <p style={{ marginBottom: "20px", color: "#666" }}>
-        Connect your wallet to begin
+      <p style={{ marginBottom: "20px", color: "#555" }}>
+        Detect whales on Base chain
       </p>
 
-      {/* Wallet Connect / Status */}
+      {/* Wallet connect */}
       <WalletStatus />
 
-      {/* Leaderboard (Base only) */}
+      {/* Leaderboard */}
       <Leaderboard />
 
-      {/* Footer text */}
-      <p style={{ marginTop: "40px", fontSize: "12px", color: "#999" }}>
-        More features coming soon 🚀
-      </p>
+      {/* API Debug (hidden UI, console-ku mattum) */}
+      {apiData && (
+        <pre style={{ display: "none" }}>
+          {JSON.stringify(apiData, null, 2)}
+        </pre>
+      )}
     </main>
   );
 }
