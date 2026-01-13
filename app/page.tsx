@@ -1,6 +1,14 @@
-import WalletStatus from "./components/WalletStatus";
+"use client";
+
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { injected } from "wagmi/connectors";
+import Leaderboard from "./components/Leaderboard";
 
 export default function Home() {
+  const { address, isConnected } = useAccount();
+  const { connect } = useConnect();
+  const { disconnect } = useDisconnect();
+
   return (
     <main
       style={{
@@ -9,27 +17,28 @@ export default function Home() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: "16px",
-        fontFamily: "sans-serif",
+        padding: 20,
       }}
     >
-      <h1 style={{ fontSize: "28px" }}>🐋 Whale Check</h1>
+      <h1 style={{ fontSize: 24, marginBottom: 8 }}>🐋 Whale Check</h1>
 
-      <p style={{ fontSize: "14px", color: "#555" }}>
-        Connect your wallet to begin
-      </p>
-
-      <WalletStatus />
-
-      <div
-        style={{
-          marginTop: "24px",
-          fontSize: "12px",
-          color: "#888",
-        }}
-      >
-        More features coming soon 🚀
-      </div>
-    </main>
-  );
-}
+      {!isConnected ? (
+        <>
+          <p style={{ marginBottom: 16 }}>Connect your wallet to begin</p>
+          <button
+            onClick={() => connect({ connector: injected() })}
+            style={{
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Connect Wallet
+          </button>
+        </>
+      ) : (
+        <>
+          <p style={{ marginBottom: 10 }}>
+            Connected:{" "}
+            <strong>
