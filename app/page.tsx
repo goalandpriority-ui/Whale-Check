@@ -1,11 +1,20 @@
 'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useBalance,
+} from 'wagmi'
 
 export default function Home() {
   const { address, isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
+
+  const { data: balance, isLoading } = useBalance({
+    address,
+  })
 
   return (
     <main style={{ padding: 40 }}>
@@ -24,6 +33,13 @@ export default function Home() {
         <>
           <p style={{ marginTop: 20 }}>
             Connected: <b>{address}</b>
+          </p>
+
+          <p style={{ marginTop: 10 }}>
+            Balance:{' '}
+            {isLoading
+              ? 'Loading...'
+              : `${Number(balance?.formatted).toFixed(4)} ${balance?.symbol}`}
           </p>
 
           <button
