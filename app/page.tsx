@@ -2,26 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { InjectedConnector } from "wagmi/connectors/injected";
+import { injected } from "wagmi/connectors";
 
 // --------------------
 // Whale type helper
 // --------------------
 function getWhaleType(balance: number) {
-  if (balance >= 1000) {
-    return { label: "Whale", emoji: "🐳" };
-  } else if (balance >= 100) {
-    return { label: "Dolphin", emoji: "🐬" };
-  } else {
-    return { label: "Shrimp", emoji: "🦐" };
-  }
+  if (balance >= 1000) return { label: "Whale", emoji: "🐳" };
+  if (balance >= 100) return { label: "Dolphin", emoji: "🐬" };
+  return { label: "Shrimp", emoji: "🦐" };
 }
 
 export default function Page() {
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect({
-    connector: new InjectedConnector(),
-  });
+  const { connect } = useConnect();
   const { disconnect } = useDisconnect();
 
   const [whales, setWhales] = useState<
@@ -29,13 +23,9 @@ export default function Page() {
   >([]);
   const [loading, setLoading] = useState(false);
 
-  // --------------------
-  // Dummy leaderboard (for now)
-  // --------------------
+  // Dummy leaderboard
   useEffect(() => {
     setLoading(true);
-
-    // Temporary static data
     setTimeout(() => {
       setWhales([
         {
@@ -51,9 +41,8 @@ export default function Page() {
           balance: 45,
         },
       ]);
-
       setLoading(false);
-    }, 1000);
+    }, 800);
   }, []);
 
   return (
@@ -61,87 +50,62 @@ export default function Page() {
       style={{
         minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
         flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         gap: "16px",
         textAlign: "center",
       }}
     >
-      {/* Title */}
-      <h1 style={{ fontSize: "22px", fontWeight: "bold" }}>
-        🐋 Base Whale Check
-      </h1>
+      <h1>🐋 Base Whale Check</h1>
       <p>Detect whales on Base chain</p>
 
-      {/* Wallet connect */}
       {!isConnected ? (
         <button
-          onClick={() => connect()}
-          style={{
-            padding: "10px 16px",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-          }}
+          onClick={() => connect({ connector: injected() })}
+          style={{ padding: "10px 16px", borderRadius: "8px" }}
         >
           Connect Wallet
         </button>
       ) : (
-        <div>
-          <p style={{ fontSize: "14px" }}>
+        <>
+          <p>
             Connected: {address?.slice(0, 6)}...
             {address?.slice(-4)}
           </p>
-          <button
-            onClick={() => disconnect()}
-            style={{
-              marginTop: "8px",
-              padding: "6px 12px",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-            }}
-          >
-            Disconnect
-          </button>
-        </div>
+          <button onClick={() => disconnect()}>Disconnect</button>
+        </>
       )}
 
-      {/* Leaderboard */}
-      <h2 style={{ marginTop: "20px", fontWeight: "bold" }}>
-        🐋 Base Whale Leaderboard
-      </h2>
+      <h2 style={{ marginTop: "20px" }}>🐋 Base Whale Leaderboard</h2>
 
       {loading && <p>Loading whales...</p>}
 
       {!loading &&
-        whales.map((whale, index) => {
-          const type = getWhaleType(whale.balance);
-
+        whales.map((w, i) => {
+          const type = getWhaleType(w.balance);
           return (
             <div
-              key={index}
+              key={i}
               style={{
                 width: "90%",
                 maxWidth: "420px",
+                border: "1px solid #eee",
                 padding: "12px",
-                border: "1px solid #e5e5e5",
                 borderRadius: "10px",
               }}
             >
-              <div style={{ fontSize: "14px" }}>
-                #{index + 1} {whale.address}
-              </div>
-              <div style={{ marginTop: "4px" }}>
-                💰 {whale.balance}+ ETH (Base)
-              </div>
-              <div style={{ marginTop: "4px", fontWeight: "bold" }}>
+              <div>#{i + 1}</div>
+              <div>{w.address}</div>
+              <div>💰 {w.balance}+ ETH (Base)</div>
+              <div>
                 {type.emoji} {type.label}
               </div>
             </div>
           );
         })}
 
-      <p style={{ marginTop: "20px", fontSize: "12px", opacity: 0.6 }}>
+      <p style={{ fontSize: "12px", opacity: 0.6 }}>
         More features coming soon 🚀
       </p>
     </main>
