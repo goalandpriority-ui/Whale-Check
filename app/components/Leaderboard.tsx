@@ -14,22 +14,27 @@ export default function Leaderboard() {
   useEffect(() => {
     async function fetchWhales() {
       try {
+        // BaseScan API url for multiple addresses balance (replace addresses with real whale addresses)
+        const addresses = "0x123...,0x456...,0x789..."; // real whale addresses comma separated
+
         const res = await fetch(
-          `https://api.basescan.org/api?module=account&action=balancemulti&address=
-0x0000000000000000000000000000000000000000
-&tag=latest&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+          `https://api.basescan.org/api?module=account&action=balancemulti&address=${addresses}&tag=latest&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
         );
 
         const data = await res.json();
 
-        // TEMP dummy mapping (BaseScan limitation)
-        setWhales([
-          { address: "0xWhale1...Base", balance: "4200 ETH" },
-          { address: "0xWhale2...Base", balance: "3100 ETH" },
-          { address: "0xWhale3...Base", balance: "2200 ETH" },
-        ]);
+        if (data.status === "1") {
+          // data.result is array of { account: string, balance: string }
+          const whalesData = data.result.map((item: any) => ({
+            address: item.account,
+            balance: (parseInt(item.balance) / 1e18).toFixed(4) + " ETH",
+          }));
+          setWhales(whalesData);
+        } else {
+          console.error("API Error:", data.message);
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
