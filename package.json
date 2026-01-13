@@ -15,8 +15,6 @@
     "wagmi": "^2.0.0",
     "viem": "^2.7.6",
 
-    "@farcaster/miniapp-sdk": "^0.0.7",
-
     "pino-pretty": "^10.3.0",
     "supports-color": "^8.1.1",
     "encoding": "^0.1.13"
