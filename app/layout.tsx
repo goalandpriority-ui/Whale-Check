@@ -1,10 +1,4 @@
-import './globals.css'
-import { Providers } from './providers'
-
-export const metadata = {
-  title: 'Whale Check',
-  description: 'Whale wallet checker',
-}
+import Providers from './providers'
 
 export default function RootLayout({
   children,
@@ -14,9 +8,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
