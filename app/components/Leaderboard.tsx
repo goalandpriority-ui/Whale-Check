@@ -1,74 +1,69 @@
 "use client";
 
-import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
 
 type Whale = {
   address: string;
-  balance: number;
+  balance: string;
 };
 
 export default function Leaderboard() {
-  const { isConnected } = useAccount();
   const [whales, setWhales] = useState<Whale[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isConnected) return;
+    async function fetchWhales() {
+      try {
+        const res = await fetch(
+          `https://api.basescan.org/api?module=account&action=balancemulti&address=
+0x0000000000000000000000000000000000000000
+&tag=latest&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+        );
 
-    const fetchWhales = async () => {
-      setLoading(true);
+        const data = await res.json();
 
-      // 🔥 TEMP MOCK DATA (Base whales)
-      const data: Whale[] = [
-        { address: "0x8A3f...21E9", balance: 1520 },
-        { address: "0x91B2...C44A", balance: 980 },
-        { address: "0xAA92...88F1", balance: 740 },
-        { address: "0xBC21...D901", balance: 420 },
-        { address: "0xD912...A11B", balance: 300 },
-      ];
-
-      setTimeout(() => {
-        setWhales(data);
+        // TEMP dummy mapping (BaseScan limitation)
+        setWhales([
+          { address: "0xWhale1...Base", balance: "4200 ETH" },
+          { address: "0xWhale2...Base", balance: "3100 ETH" },
+          { address: "0xWhale3...Base", balance: "2200 ETH" },
+        ]);
+      } catch (err) {
+        console.error(err);
+      } finally {
         setLoading(false);
-      }, 1000);
-    };
+      }
+    }
 
     fetchWhales();
-  }, [isConnected]);
-
-  if (!isConnected) return null;
+  }, []);
 
   return (
-    <div
-      style={{
-        marginTop: "40px",
-        width: "100%",
-        maxWidth: "420px",
-        textAlign: "left",
-      }}
-    >
-      <h2 style={{ marginBottom: "12px" }}>🐋 Base Whale Leaderboard</h2>
+    <div style={{ marginTop: "30px", width: "100%", maxWidth: "400px" }}>
+      <h3 style={{ marginBottom: "10px" }}>🐋 Base Whale Leaderboard</h3>
 
-      {loading && <p>Loading whales...</p>}
-
-      {!loading &&
-        whales.map((whale, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "10px",
-              borderBottom: "1px solid #eee",
-            }}
-          >
-            <span>
-              #{index + 1} {whale.address}
-            </span>
-            <strong>{whale.balance} ETH</strong>
-          </div>
-        ))}
+      {loading ? (
+        <p>Loading whales...</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {whales.map((w, i) => (
+            <li
+              key={i}
+              style={{
+                padding: "10px",
+                border: "1px solid #eee",
+                borderRadius: "8px",
+                marginBottom: "8px",
+                fontSize: "14px",
+              }}
+            >
+              <b>#{i + 1}</b> {w.address}
+              <br />
+              💰 {w.balance}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
