@@ -1,55 +1,56 @@
-'use client'
+'use client';
 
-import {
-  useAccount,
-  useConnect,
-  useDisconnect,
-  useBalance,
-} from 'wagmi'
+import { useAccount, useBalance } from 'wagmi';
 
 export default function Home() {
-  const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
-  const { disconnect } = useDisconnect()
+  const { address, isConnected } = useAccount();
 
   const { data: balance, isLoading } = useBalance({
     address,
-  })
+    enabled: isConnected,
+  });
+
+  const ethBalance = balance
+    ? Number(balance.formatted)
+    : 0;
+
+  const isWhale = ethBalance >= 5;
 
   return (
-    <main style={{ padding: 40 }}>
-      <h1>🐳 Whale Check</h1>
+    <main
+      style={{
+        minHeight: '100vh',
+        background: '#020617',
+        color: 'white',
+        padding: '20px',
+      }}
+    >
+      <h1 style={{ fontSize: '24px', marginBottom: '20px' }}>
+        🐳 Whale Check
+      </h1>
 
       {!isConnected && (
-        <button
-          onClick={() => connect({ connector: connectors[0] })}
-          style={{ marginTop: 20, padding: 10 }}
-        >
-          Connect Wallet
-        </button>
+        <p>Connect your wallet to check whale status</p>
       )}
 
       {isConnected && (
         <>
-          <p style={{ marginTop: 20 }}>
-            Connected: <b>{address}</b>
+          <p>
+            <strong>Wallet:</strong>{' '}
+            {address?.slice(0, 6)}...
+            {address?.slice(-4)}
           </p>
 
-          <p style={{ marginTop: 10 }}>
-            Balance:{' '}
-            {isLoading
-              ? 'Loading...'
-              : `${Number(balance?.formatted).toFixed(4)} ${balance?.symbol}`}
+          <p>
+            <strong>Balance:</strong>{' '}
+            {isLoading ? 'Loading...' : `${ethBalance} ETH`}
           </p>
 
-          <button
-            onClick={() => disconnect()}
-            style={{ marginTop: 10, padding: 10 }}
-          >
-            Disconnect
-          </button>
+          <h2 style={{ marginTop: '20px' }}>
+            {isWhale ? '🐳 You are a WHALE!' : '🐟 You are NOT a whale'}
+          </h2>
         </>
       )}
     </main>
-  )
+  );
 }
