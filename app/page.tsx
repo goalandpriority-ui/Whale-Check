@@ -25,6 +25,7 @@ export default function Home() {
       {!isConnected ? (
         <>
           <p style={{ marginBottom: 16 }}>Connect your wallet to begin</p>
+
           <button
             onClick={() => connect({ connector: injected() })}
             style={{
@@ -42,3 +43,30 @@ export default function Home() {
           <p style={{ marginBottom: 10 }}>
             Connected:{" "}
             <strong>
+              {address?.slice(0, 6)}...{address?.slice(-4)}
+            </strong>
+          </p>
+
+          <button
+            onClick={() => disconnect()}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 8,
+              border: "none",
+              cursor: "pointer",
+              marginBottom: 20,
+            }}
+          >
+            Disconnect
+          </button>
+
+          <Leaderboard />
+        </>
+      )}
+
+      <p style={{ marginTop: 30, fontSize: 12, opacity: 0.6 }}>
+        More features coming soon 🚀
+      </p>
+    </main>
+  );
+}
