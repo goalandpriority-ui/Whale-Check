@@ -1,39 +1,33 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  useAccount,
-  useConnect,
-  useDisconnect,
-  useBalance,
-} from 'wagmi'
-import { injected } from 'wagmi/connectors'
+import { useAccount, useBalance } from 'wagmi'
 
-type LeaderboardItem = {
+interface LeaderboardEntry {
   wallet: string
   balance: number
 }
 
-export default function Home() {
-  const { address, isConnected } = useAccount()
-  const { connect } = useConnect()
-  const { disconnect } = useDisconnect()
-
+export default function Page() {
+  const { address } = useAccount()
   const { data: balanceData } = useBalance({
     address,
   })
 
-  const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([
     { wallet: '0xAAA...111', balance: 520 },
     { wallet: '0xBBB...222', balance: 410 },
     { wallet: '0xCCC...333', balance: 300 },
   ])
 
-  // 👉 Auto add connected wallet to leaderboard
   useEffect(() => {
     if (!address || !balanceData) return
 
-    const balanceEth = Number(balanceData.formatted)
+    const balanceEth = Number(
+      parseFloat(balanceData.formatted || '0').toFixed(4)
+    )
+
+    if (balanceEth < 5) return
 
     setLeaderboard((prev) => {
       const alreadyExists = prev.find(
@@ -50,48 +44,24 @@ export default function Home() {
         },
       ]
 
-      // sort by balance desc
       return updated.sort((a, b) => b.balance - a.balance)
     })
   }, [address, balanceData])
 
   return (
-    <main style={{ padding: 20, fontFamily: 'sans-serif' }}>
-      <h1>🐳 Whale Check</h1>
+    <main style={{ padding: 20 }}>
+      <h1>🐋 Whale Check</h1>
+      <p>
+        Connected Wallet:{' '}
+        {address ? address : 'Wallet not connected'}
+      </p>
+      {!address && <button>Connect Wallet</button>}
 
-      {!isConnected && (
-        <>
-          <p>Wallet not connected</p>
-          <button onClick={() => connect({ connector: injected() })}>
-            Connect Wallet
-          </button>
-        </>
-      )}
-
-      {isConnected && (
-        <>
-          <p>
-            <strong>Connected Wallet:</strong>
-            <br />
-            {address}
-          </p>
-
-          {balanceData && (
-            <p>
-              <strong>Balance:</strong>{' '}
-              {balanceData.formatted} {balanceData.symbol}
-            </p>
-          )}
-
-          <button onClick={() => disconnect()}>Disconnect</button>
-        </>
-      )}
-
-      <hr style={{ margin: '30px 0' }} />
+      <hr />
 
       <h2>🏆 Whale Leaderboard</h2>
 
-      <table border={1} cellPadding={8}>
+      <table border={1} cellPadding={5} cellSpacing={0}>
         <thead>
           <tr>
             <th>Rank</th>
@@ -100,15 +70,11 @@ export default function Home() {
           </tr>
         </thead>
         <tbody>
-          {leaderboard.map((item, index) => (
-            <tr key={item.wallet}>
+          {leaderboard.map((entry, index) => (
+            <tr key={entry.wallet}>
               <td>{index + 1}</td>
-              <td>
-                {item.wallet.length > 12
-                  ? `${item.wallet.slice(0, 6)}...${item.wallet.slice(-4)}`
-                  : item.wallet}
-              </td>
-              <td>{item.balance.toFixed(4)}</td>
+              <td>{entry.wallet}</td>
+              <td>{entry.balance.toFixed(4)}</td>
             </tr>
           ))}
         </tbody>
