@@ -2,8 +2,8 @@
 
 import { WagmiConfig, createConfig, configureChains } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { publicProvider } from 'wagmi/providers/public'
-import { InjectedConnector } from 'wagmi/connectors/injected'
+import { publicProvider } from 'wagmi/providers/public'  // Correct path
+import { InjectedConnector } from 'wagmi/connectors/injected'  // Correct path
 import { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
