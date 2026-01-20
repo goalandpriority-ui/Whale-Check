@@ -1,67 +1,57 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useAccount, useBalance } from 'wagmi'
+import { useState, useEffect } from "react";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { InjectedConnector } from "wagmi/connectors/injected";
 
-interface LeaderboardEntry {
-  wallet: string
-  balance: number
-}
+type Whale = {
+  address: string;
+  balance: string;
+};
 
-export default function Page() {
-  const { address } = useAccount()
-  const { data: balanceData } = useBalance({
-    address,
-  })
+export default function Home() {
+  const { address, isConnected } = useAccount();
+  const { connect } = useConnect({
+    connector: new InjectedConnector(),
+  });
+  const { disconnect } = useDisconnect();
 
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([
-    { wallet: '0xAAA...111', balance: 520 },
-    { wallet: '0xBBB...222', balance: 410 },
-    { wallet: '0xCCC...333', balance: 300 },
-  ])
+  const [whales, setWhales] = useState<Whale[]>([
+    { address: "0xAAA...111", balance: "520.0000" },
+    { address: "0xBBB...222", balance: "410.0000" },
+    { address: "0xCCC...333", balance: "300.0000" },
+  ]);
 
-  useEffect(() => {
-    if (!address || !balanceData) return
-
-    const balanceEth = Number(
-      parseFloat(balanceData.formatted || '0').toFixed(4)
-    )
-
-    if (balanceEth < 5) return
-
-    setLeaderboard((prev) => {
-      const alreadyExists = prev.find(
-        (item) => item.wallet.toLowerCase() === address.toLowerCase()
-      )
-
-      if (alreadyExists) return prev
-
-      const updated = [
-        ...prev,
-        {
-          wallet: address,
-          balance: balanceEth,
-        },
-      ]
-
-      return updated.sort((a, b) => b.balance - a.balance)
-    })
-  }, [address, balanceData])
+  // Example: Replace with actual API call to fetch whale balances if you want
+  // For now, dummy data is shown as placeholder
 
   return (
-    <main style={{ padding: 20 }}>
+    <main style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
       <h1>🐋 Whale Check</h1>
-      <p>
-        Connected Wallet:{' '}
-        {address ? address : 'Wallet not connected'}
-      </p>
-      {!address && <button>Connect Wallet</button>}
 
-      <hr />
+      <div style={{ marginBottom: "20px" }}>
+        {!isConnected ? (
+          <>
+            <p>Wallet not connected</p>
+            <button onClick={() => connect()}>Connect Wallet</button>
+          </>
+        ) : (
+          <>
+            <p>
+              Connected Wallet: <br />
+              <code>{address}</code>
+            </p>
+            <button onClick={() => disconnect()}>Disconnect Wallet</button>
+          </>
+        )}
+      </div>
 
       <h2>🏆 Whale Leaderboard</h2>
-
-      <table border={1} cellPadding={5} cellSpacing={0}>
+      <table
+        border={1}
+        cellPadding={8}
+        style={{ borderCollapse: "collapse", width: "100%", maxWidth: "400px" }}
+      >
         <thead>
           <tr>
             <th>Rank</th>
@@ -70,15 +60,15 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {leaderboard.map((entry, index) => (
-            <tr key={entry.wallet}>
+          {whales.map((whale, index) => (
+            <tr key={index}>
               <td>{index + 1}</td>
-              <td>{entry.wallet}</td>
-              <td>{entry.balance.toFixed(4)}</td>
+              <td>{whale.address}</td>
+              <td>{whale.balance}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </main>
-  )
+  );
 }
