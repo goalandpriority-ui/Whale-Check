@@ -27,9 +27,7 @@ const config = createConfig({
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiConfig config={config}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiConfig>
   )
 }
