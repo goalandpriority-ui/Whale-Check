@@ -1,19 +1,28 @@
 'use client'
 
-import { WagmiConfig, createConfig, http } from 'wagmi'
+import { WagmiConfig, createConfig, configureChains } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { publicProvider } from 'wagmi/providers/public'
 import { InjectedConnector } from 'wagmi/connectors/injected'
 import { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const queryClient = new QueryClient()
+
+// Configure chains and providers
+const { chains, publicClient } = configureChains(
+  [base],
+  [publicProvider()]
+)
 
 const config = createConfig({
   autoConnect: true,
   connectors: [
-    new InjectedConnector()
+    new InjectedConnector({
+      chains
+    }),
   ],
-  publicClient: http(base),
+  publicClient,
 })
 
 export default function Providers({ children }: { children: ReactNode }) {
