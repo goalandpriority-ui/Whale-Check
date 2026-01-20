@@ -1,53 +1,54 @@
 'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi'
+import { injected } from 'wagmi/connectors'
 
-const leaderboardData = [
-  { rank: 1, address: '0xAAA...111', balance: '520 ETH' },
-  { rank: 2, address: '0xBBB...222', balance: '410 ETH' },
-  { rank: 3, address: '0xCCC...333', balance: '300 ETH' },
-]
-
-export default function Page() {
+export default function Home() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending } = useConnect()
+  const { connect } = useConnect()
   const { disconnect } = useDisconnect()
 
+  const balance = useBalance({
+    address,
+  })
+
   return (
-    <main style={{ padding: 20 }}>
+    <main style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>🐳 Whale Check</h1>
 
-      {/* WALLET SECTION */}
       {!isConnected && (
         <>
           <p>Wallet not connected</p>
-          {connectors.map((connector) => (
-            <button
-              key={connector.uid}
-              onClick={() => connect({ connector })}
-              disabled={isPending}
-              style={{ marginBottom: 10 }}
-            >
-              Connect Wallet
-            </button>
-          ))}
+          <button onClick={() => connect({ connector: injected() })}>
+            Connect Wallet
+          </button>
         </>
       )}
 
       {isConnected && (
         <>
-          <p><b>Connected Wallet:</b></p>
-          <p>{address}</p>
+          <p>
+            <strong>Connected Wallet:</strong>
+            <br />
+            {address}
+          </p>
+
+          {balance.data && (
+            <p>
+              <strong>Balance:</strong>{' '}
+              {balance.data.formatted} {balance.data.symbol}
+            </p>
+          )}
+
           <button onClick={() => disconnect()}>Disconnect</button>
         </>
       )}
 
-      <hr style={{ margin: '20px 0' }} />
+      <hr style={{ margin: '30px 0' }} />
 
-      {/* LEADERBOARD */}
       <h2>🏆 Whale Leaderboard</h2>
 
-      <table border={1} cellPadding={10}>
+      <table border={1} cellPadding={8}>
         <thead>
           <tr>
             <th>Rank</th>
@@ -56,13 +57,21 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {leaderboardData.map((user) => (
-            <tr key={user.rank}>
-              <td>{user.rank}</td>
-              <td>{user.address}</td>
-              <td>{user.balance}</td>
-            </tr>
-          ))}
+          <tr>
+            <td>1</td>
+            <td>0xAAA...111</td>
+            <td>520 ETH</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>0xBBB...222</td>
+            <td>410 ETH</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>0xCCC...333</td>
+            <td>300 ETH</td>
+          </tr>
         </tbody>
       </table>
     </main>
