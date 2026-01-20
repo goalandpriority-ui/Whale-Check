@@ -1,74 +1,68 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { InjectedConnector } from "wagmi/connectors/injected";
+import { useAccount, useBalance, useConnect, useDisconnect } from 'wagmi'
 
-type Whale = {
-  address: string;
-  balance: string;
-};
+export default function HomePage() {
+  const { address, isConnected } = useAccount()
+  const { connect, connectors } = useConnect()
+  const { disconnect } = useDisconnect()
 
-export default function Home() {
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect({
-    connector: new InjectedConnector(),
-  });
-  const { disconnect } = useDisconnect();
-
-  const [whales, setWhales] = useState<Whale[]>([
-    { address: "0xAAA...111", balance: "520.0000" },
-    { address: "0xBBB...222", balance: "410.0000" },
-    { address: "0xCCC...333", balance: "300.0000" },
-  ]);
-
-  // Example: Replace with actual API call to fetch whale balances if you want
-  // For now, dummy data is shown as placeholder
+  const { data: balance } = useBalance({
+    address,
+  })
 
   return (
-    <main style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1>🐋 Whale Check</h1>
+    <main
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '16px',
+        fontFamily: 'sans-serif',
+      }}
+    >
+      <h1>🐋 Base Whale Check</h1>
 
-      <div style={{ marginBottom: "20px" }}>
-        {!isConnected ? (
-          <>
-            <p>Wallet not connected</p>
-            <button onClick={() => connect()}>Connect Wallet</button>
-          </>
-        ) : (
-          <>
-            <p>
-              Connected Wallet: <br />
-              <code>{address}</code>
-            </p>
-            <button onClick={() => disconnect()}>Disconnect Wallet</button>
-          </>
-        )}
-      </div>
+      {!isConnected ? (
+        <button
+          onClick={() => connect({ connector: connectors[0] })}
+          style={{
+            padding: '10px 16px',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          Connect Wallet
+        </button>
+      ) : (
+        <>
+          <p>
+            <b>Address:</b> {address}
+          </p>
 
-      <h2>🏆 Whale Leaderboard</h2>
-      <table
-        border={1}
-        cellPadding={8}
-        style={{ borderCollapse: "collapse", width: "100%", maxWidth: "400px" }}
-      >
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Wallet</th>
-            <th>Balance (ETH)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {whales.map((whale, index) => (
-            <tr key={index}>
-              <td>{index + 1}</td>
-              <td>{whale.address}</td>
-              <td>{whale.balance}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          <p>
+            <b>Balance:</b>{' '}
+            {balance
+              ? `${balance.formatted} ${balance.symbol}`
+              : 'Loading...'}
+          </p>
+
+          <button
+            onClick={() => disconnect()}
+            style={{
+              padding: '10px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Disconnect
+          </button>
+        </>
+      )}
     </main>
-  );
+  )
 }
