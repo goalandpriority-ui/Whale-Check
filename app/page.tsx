@@ -1,39 +1,50 @@
-'use client';
+'use client'
 
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { injected } from 'wagmi/connectors'
 
 export default function Page() {
-  const { address, isConnected } = useAccount();
-
-  const { data: balanceData, isLoading } = useBalance({
-    address: address,
-    chainId: 8453, // Base mainnet
-    query: {
-      enabled: isConnected && !!address,
-    },
-  });
+  const { address, isConnected } = useAccount()
+  const { connect } = useConnect()
+  const { disconnect } = useDisconnect()
 
   return (
-    <main style={{ padding: 24 }}>
+    <main style={{ padding: '24px' }}>
       <h1>Whale Check</h1>
 
-      {!isConnected && <p>Wallet connect pannala</p>}
-
-      {isConnected && (
+      {!isConnected ? (
         <>
+          <p>Wallet connect pannala</p>
+          <button
+            onClick={() => connect({ connector: injected() })}
+            style={{
+              padding: '10px 16px',
+              marginTop: '10px',
+              cursor: 'pointer'
+            }}
+          >
+            Connect Wallet
+          </button>
+        </>
+      ) : (
+        <>
+          <p>✅ Wallet Connected</p>
           <p>
-            <b>Address:</b> {address}
+            Address: <b>{address}</b>
           </p>
 
-          {isLoading && <p>Balance load aagudhu...</p>}
-
-          {balanceData && (
-            <p>
-              <b>Balance:</b> {balanceData.formatted} {balanceData.symbol}
-            </p>
-          )}
+          <button
+            onClick={() => disconnect()}
+            style={{
+              padding: '10px 16px',
+              marginTop: '10px',
+              cursor: 'pointer'
+            }}
+          >
+            Disconnect
+          </button>
         </>
       )}
     </main>
-  );
+  )
 }
