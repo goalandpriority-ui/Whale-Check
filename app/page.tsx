@@ -1,28 +1,27 @@
 'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useBalance, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
+import { base } from 'wagmi/chains'
 
-export default function Page() {
+export default function Home() {
   const { address, isConnected } = useAccount()
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
 
+  const { data: balance, isLoading } = useBalance({
+    address,
+    chainId: base.id,
+  })
+
   return (
-    <main style={{ padding: '24px' }}>
-      <h1>Whale Check</h1>
+    <main style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      <h1>🐋 Whale Check</h1>
 
       {!isConnected ? (
         <>
           <p>Wallet connect pannala</p>
-          <button
-            onClick={() => connect({ connector: injected() })}
-            style={{
-              padding: '10px 16px',
-              marginTop: '10px',
-              cursor: 'pointer'
-            }}
-          >
+          <button onClick={() => connect({ connector: injected() })}>
             Connect Wallet
           </button>
         </>
@@ -30,17 +29,16 @@ export default function Page() {
         <>
           <p>✅ Wallet Connected</p>
           <p>
-            Address: <b>{address}</b>
+            <b>Address:</b><br />
+            {address}
           </p>
 
-          <button
-            onClick={() => disconnect()}
-            style={{
-              padding: '10px 16px',
-              marginTop: '10px',
-              cursor: 'pointer'
-            }}
-          >
+          <p>
+            <b>Balance (Base ETH):</b><br />
+            {isLoading ? 'Loading...' : `${balance?.formatted} ETH`}
+          </p>
+
+          <button onClick={() => disconnect()}>
             Disconnect
           </button>
         </>
