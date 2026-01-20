@@ -1,5 +1,5 @@
 {
-  "name": "base-whale-check",
+  "name": "base-whale-app",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -11,9 +11,7 @@
     "next": "13.4.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-
-    "wagmi": "^2.6.0",
-    "viem": "^2.7.0",
-    "@tanstack/react-query": "^5.17.0"
+    "wagmi": "^1.2.0",
+    "@tanstack/react-query": "^4.30.0"
   }
 }
