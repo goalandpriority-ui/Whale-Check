@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { InjectedConnector } from "wagmi/connectors/injected";
 
@@ -21,9 +21,6 @@ export default function Home() {
     { address: "0xBBB...222", balance: "410.0000" },
     { address: "0xCCC...333", balance: "300.0000" },
   ]);
-
-  // Example: Replace with actual API call to fetch whale balances if you want
-  // For now, dummy data is shown as placeholder
 
   return (
     <main style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
