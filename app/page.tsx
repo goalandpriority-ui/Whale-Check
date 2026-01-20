@@ -8,7 +8,9 @@ export default function Home() {
 
   const { data: balance, isLoading } = useBalance({
     address,
-    enabled: isConnected,
+    query: {
+      enabled: isConnected,
+    },
   })
 
   return (
@@ -18,7 +20,6 @@ export default function Home() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-start',
         padding: '40px 16px',
         background: '#0b0b0b',
         color: '#fff',
@@ -58,7 +59,10 @@ export default function Home() {
             background: '#111',
           }}
         >
-          <p style={{ fontSize: '14px', opacity: 0.7 }}>Connected Wallet</p>
+          <p style={{ fontSize: '14px', opacity: 0.7 }}>
+            Connected Wallet
+          </p>
+
           <p style={{ fontSize: '13px', wordBreak: 'break-all' }}>
             {address}
           </p>
@@ -78,8 +82,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* 🔥 STEP 10 – AUTO LEADERBOARD */}
+      {/* STEP 10 – Leaderboard */}
       <Leaderboard />
     </main>
   )
-}
+            }
