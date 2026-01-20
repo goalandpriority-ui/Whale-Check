@@ -1,89 +1,51 @@
 'use client'
 
-import { useAccount, useBalance } from 'wagmi'
-import Leaderboard from './components/Leaderboard'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { injected } from 'wagmi/connectors'
+import { formatEther } from 'viem'
+import { useBalance } from 'wagmi'
 
-export default function Home() {
+export default function HomePage() {
   const { address, isConnected } = useAccount()
+  const { connect } = useConnect()
+  const { disconnect } = useDisconnect()
 
-  const { data: balance, isLoading } = useBalance({
+  const { data: balance } = useBalance({
     address,
-    query: {
-      enabled: isConnected,
-    },
   })
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '40px 16px',
-        background: '#0b0b0b',
-        color: '#fff',
-        fontFamily: 'sans-serif',
-      }}
-    >
-      <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>
-        🐋 Base Whale Check
-      </h1>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+      <h1 className="text-3xl font-bold mb-2">🐳 Base Whale Check</h1>
+      <p className="text-gray-400 mb-6">Check whale power on Base</p>
 
-      <p style={{ opacity: 0.7, marginBottom: '24px' }}>
-        Check whale power on Base
-      </p>
-
-      {!isConnected && (
-        <div
-          style={{
-            padding: '16px',
-            border: '1px dashed #333',
-            borderRadius: '12px',
-            marginBottom: '24px',
-          }}
+      {!isConnected ? (
+        <button
+          onClick={() => connect({ connector: injected() })}
+          className="px-6 py-3 rounded-lg bg-white text-black font-semibold"
         >
-          🔌 Please connect your wallet
-        </div>
-      )}
-
-      {isConnected && (
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '420px',
-            border: '1px solid #222',
-            borderRadius: '14px',
-            padding: '16px',
-            marginBottom: '30px',
-            background: '#111',
-          }}
-        >
-          <p style={{ fontSize: '14px', opacity: 0.7 }}>
-            Connected Wallet
+          🔗 Connect Wallet
+        </button>
+      ) : (
+        <div className="text-center space-y-3">
+          <p className="text-green-400 font-mono">
+            Connected: {address}
           </p>
 
-          <p style={{ fontSize: '13px', wordBreak: 'break-all' }}>
-            {address}
-          </p>
+          {balance && (
+            <p className="text-xl">
+              Balance: {Number(formatEther(balance.value)).toFixed(4)} ETH
+            </p>
+          )}
 
-          <div style={{ marginTop: '12px' }}>
-            {isLoading ? (
-              <p>Loading balance...</p>
-            ) : (
-              <p style={{ fontSize: '16px' }}>
-                💰 Balance:{' '}
-                <b>
-                  {balance?.formatted} {balance?.symbol}
-                </b>
-              </p>
-            )}
-          </div>
+          <button
+            onClick={() => disconnect()}
+            className="px-4 py-2 rounded bg-red-600"
+          >
+            Disconnect
+          </button>
         </div>
       )}
-
-      {/* STEP 10 – Leaderboard */}
-      <Leaderboard />
     </main>
   )
-            }
+}
