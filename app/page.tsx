@@ -10,27 +10,15 @@ export default function Home() {
   })
 
   return (
-    <main
-      style={{
-        padding: '20px',
-        fontFamily: 'Arial, sans-serif',
-      }}
-    >
+    <main style={{ padding: 20 }}>
       <h1>Base Whale Check</h1>
       <p>Check whale power on Base</p>
 
-      {!isConnected && (
-        <p style={{ marginTop: '20px' }}>
-          🔌 Please connect your wallet
-        </p>
-      )}
+      {!isConnected && <p>Connect your wallet to continue</p>}
 
       {isConnected && (
-        <div style={{ marginTop: '20px' }}>
-          <p>
-            <b>Wallet Address:</b><br />
-            {address}
-          </p>
+        <>
+          <p><b>Wallet:</b> {address}</p>
 
           {isLoading && <p>Loading balance...</p>}
 
@@ -39,7 +27,7 @@ export default function Home() {
               <b>Balance:</b> {balance.formatted} {balance.symbol}
             </p>
           )}
-        </div>
+        </>
       )}
     </main>
   )
