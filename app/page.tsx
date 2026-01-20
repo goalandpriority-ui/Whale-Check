@@ -1,49 +1,44 @@
 'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
-import { injected } from 'wagmi/connectors'
-import { formatEther } from 'viem'
-import { useBalance } from 'wagmi'
+import { useAccount, useBalance } from 'wagmi'
 
-export default function HomePage() {
+export default function Home() {
   const { address, isConnected } = useAccount()
-  const { connect } = useConnect()
-  const { disconnect } = useDisconnect()
 
-  const { data: balance } = useBalance({
-    address,
+  const { data: balance, isLoading } = useBalance({
+    address: isConnected ? address : undefined,
   })
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
-      <h1 className="text-3xl font-bold mb-2">🐳 Base Whale Check</h1>
-      <p className="text-gray-400 mb-6">Check whale power on Base</p>
+    <main
+      style={{
+        padding: '20px',
+        fontFamily: 'Arial, sans-serif',
+      }}
+    >
+      <h1>Base Whale Check</h1>
+      <p>Check whale power on Base</p>
 
-      {!isConnected ? (
-        <button
-          onClick={() => connect({ connector: injected() })}
-          className="px-6 py-3 rounded-lg bg-white text-black font-semibold"
-        >
-          🔗 Connect Wallet
-        </button>
-      ) : (
-        <div className="text-center space-y-3">
-          <p className="text-green-400 font-mono">
-            Connected: {address}
+      {!isConnected && (
+        <p style={{ marginTop: '20px' }}>
+          🔌 Please connect your wallet
+        </p>
+      )}
+
+      {isConnected && (
+        <div style={{ marginTop: '20px' }}>
+          <p>
+            <b>Wallet Address:</b><br />
+            {address}
           </p>
 
+          {isLoading && <p>Loading balance...</p>}
+
           {balance && (
-            <p className="text-xl">
-              Balance: {Number(formatEther(balance.value)).toFixed(4)} ETH
+            <p>
+              <b>Balance:</b> {balance.formatted} {balance.symbol}
             </p>
           )}
-
-          <button
-            onClick={() => disconnect()}
-            className="px-4 py-2 rounded bg-red-600"
-          >
-            Disconnect
-          </button>
         </div>
       )}
     </main>
