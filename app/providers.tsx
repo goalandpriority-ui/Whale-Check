@@ -1,30 +1,32 @@
-'use client'
+'use client';
 
-import { WagmiConfig, createConfig, configureChains } from 'wagmi'
-import { base } from 'wagmi/chains'
-import { InjectedConnector } from 'wagmi/connectors/injected'
-import { publicProvider } from 'wagmi/providers/public'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactNode } from 'react'
+import { WagmiConfig, createConfig, configureChains } from 'wagmi';
+import { mainnet } from 'wagmi/chains';
+import { InjectedConnector } from 'wagmi/connectors/injected';
+import { publicProvider } from 'wagmi/providers/public';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { ReactNode } from 'react';
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
-const { chains, provider, webSocketProvider } = configureChains(
-  [base],
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [mainnet],
   [publicProvider()]
-)
+);
 
 const config = createConfig({
   autoConnect: true,
   connectors: [new InjectedConnector({ chains })],
-  provider,
-  webSocketProvider,
-})
+  publicClient,
+  webSocketPublicClient,
+});
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiConfig config={config}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
     </WagmiConfig>
-  )
+  );
 }
