@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const queryClient = new QueryClient()
 
-// Configure chains and providers
 const { chains, publicClient } = configureChains(
   [base],
   [publicProvider()]
@@ -19,7 +18,7 @@ const config = createConfig({
   autoConnect: true,
   connectors: [
     new InjectedConnector({
-      chains
+      chains,
     }),
   ],
   publicClient,
