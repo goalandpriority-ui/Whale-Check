@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import {
   useAccount,
   useConnect,
@@ -12,30 +13,19 @@ export default function HomePage() {
   const { connect, connectors, isLoading } = useConnect();
   const { disconnect } = useDisconnect();
 
-  const { data: balance, isLoading: balanceLoading } = useBalance({
+  // State for user input token address
+  const [tokenAddressInput, setTokenAddressInput] = useState("");
+
+  // Fetch ETH balance
+  const { data: ethBalance, isLoading: ethLoading } = useBalance({
     address: address ?? undefined,
     watch: true,
   });
 
-  const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
-  const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-  const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-
-  const { data: daiBalance, isLoading: daiLoading } = useBalance({
+  // Fetch dynamic token balance based on user input
+  const { data: customTokenBalance, isLoading: customTokenLoading } = useBalance({
     address,
-    token: daiAddress,
-    watch: true,
-  });
-
-  const { data: usdtBalance, isLoading: usdtLoading } = useBalance({
-    address,
-    token: usdtAddress,
-    watch: true,
-  });
-
-  const { data: usdcBalance, isLoading: usdcLoading } = useBalance({
-    address,
-    token: usdcAddress,
+    token: tokenAddressInput || undefined,
     watch: true,
   });
 
@@ -50,6 +40,7 @@ export default function HomePage() {
         alignItems: "center",
         flexDirection: "column",
         gap: "16px",
+        padding: "20px",
       }}
     >
       <h1>🐳 Whale Check</h1>
@@ -66,6 +57,7 @@ export default function HomePage() {
                 background: "#2563eb",
                 color: "white",
                 borderRadius: "8px",
+                marginBottom: "12px",
               }}
             >
               Connect {connector.name}
@@ -82,38 +74,38 @@ export default function HomePage() {
 
           <p>
             ETH Balance:{" "}
-            {balanceLoading
+            {ethLoading
               ? "Loading..."
-              : balance
-              ? `${Number(balance.formatted).toFixed(4)} ETH`
+              : ethBalance
+              ? `${Number(ethBalance.formatted).toFixed(4)} ETH`
               : "No balance"}
           </p>
 
-          <p>
-            DAI Balance:{" "}
-            {daiLoading
-              ? "Loading..."
-              : daiBalance
-              ? `${Number(daiBalance.formatted).toFixed(4)} DAI`
-              : "No DAI"}
-          </p>
+          <input
+            type="text"
+            placeholder="Enter token contract address"
+            value={tokenAddressInput}
+            onChange={(e) => setTokenAddressInput(e.target.value.trim())}
+            style={{
+              padding: "10px",
+              width: "300px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              marginTop: "20px",
+              marginBottom: "10px",
+              fontSize: "16px",
+            }}
+          />
 
           <p>
-            USDT Balance:{" "}
-            {usdtLoading
+            Token Balance:{" "}
+            {customTokenLoading
               ? "Loading..."
-              : usdtBalance
-              ? `${Number(usdtBalance.formatted).toFixed(4)} USDT`
-              : "No USDT"}
-          </p>
-
-          <p>
-            USDC Balance:{" "}
-            {usdcLoading
-              ? "Loading..."
-              : usdcBalance
-              ? `${Number(usdcBalance.formatted).toFixed(4)} USDC`
-              : "No USDC"}
+              : customTokenBalance
+              ? `${Number(customTokenBalance.formatted).toFixed(4)}`
+              : tokenAddressInput
+              ? "No balance or invalid token"
+              : "-"}
           </p>
 
           <button
@@ -123,6 +115,7 @@ export default function HomePage() {
               background: "#dc2626",
               color: "white",
               borderRadius: "8px",
+              marginTop: "30px",
             }}
           >
             Disconnect
