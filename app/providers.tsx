@@ -5,7 +5,7 @@ import { InjectedConnector } from 'wagmi/connectors/injected';
 import { base } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const client = createClient({
+const wagmiClient = createClient({
   autoConnect: true,
   connectors: [
     new InjectedConnector({
@@ -16,9 +16,13 @@ const client = createClient({
 
 const queryClient = new QueryClient();
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <WagmiConfig client={client}>
+    <WagmiConfig client={wagmiClient}>
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>
