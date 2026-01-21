@@ -1,9 +1,10 @@
 'use client';
 
-import { WagmiProvider, createConfig, http } from 'wagmi';
+import { WagmiProvider, createConfig } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { injected } from 'wagmi/connectors';
+import { http } from 'viem';
 
 const config = createConfig({
   chains: [base],
@@ -11,8 +12,8 @@ const config = createConfig({
     injected()
   ],
   transports: {
-    [base.id]: http()
-  }
+    [base.id]: http(),
+  },
 });
 
 const queryClient = new QueryClient();
