@@ -45,7 +45,7 @@ export default function HomePage() {
 
       {!isConnected && (
         <p className="text-gray-400">
-          Wallet connect pannunga macha
+          <h2>Connect wallet to check whale stats</h2>
         </p>
       )}
 
