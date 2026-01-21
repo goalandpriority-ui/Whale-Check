@@ -12,8 +12,9 @@ export default function HomePage() {
   const { connect, connectors, isLoading } = useConnect();
   const { disconnect } = useDisconnect();
 
-  const { data: balance } = useBalance({
-    address,
+  const { data: balance, isLoading: balanceLoading } = useBalance({
+    address: address ?? undefined,
+    watch: true,
   });
 
   return (
@@ -59,9 +60,11 @@ export default function HomePage() {
 
           <p>
             Balance:{" "}
-            {balance
+            {balanceLoading
+              ? "Loading..."
+              : balance
               ? `${Number(balance.formatted).toFixed(4)} ETH`
-              : "Loading..."}
+              : "No balance"}
           </p>
 
           <button
