@@ -35,7 +35,7 @@ export default function HomePage() {
         <>
           {connectors.map((connector) => (
             <button
-              key={connector.id}  {/* uid -> id */}
+              key={connector.id}
               onClick={() => connect({ connector })}
               disabled={isLoading}
               style={{
@@ -54,8 +54,7 @@ export default function HomePage() {
       {isConnected && (
         <>
           <p>
-            Address:{" "}
-            {address?.slice(0, 6)}...{address?.slice(-4)}
+            Address: {address?.slice(0, 6)}...{address?.slice(-4)}
           </p>
 
           <p>
