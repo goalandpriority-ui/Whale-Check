@@ -19,7 +19,7 @@ export default function Home() {
 
       {isConnected && (
         <>
-          <p>Address: {address}</p>
+          <p>Connected: {address}</p>
           <button onClick={() => disconnect()}>Disconnect</button>
         </>
       )}
