@@ -1,24 +1,29 @@
-'use client'
+'use client';
 
-import { WagmiConfig, createClient, configureChains } from 'wagmi'
-import { mainnet } from 'wagmi/chains'
-import { publicProvider } from 'wagmi/providers/public'
+import { WagmiConfig, createConfig, configureChains } from 'wagmi';
+import { publicProvider } from 'wagmi/providers/public';
+import { mainnet } from 'wagmi/chains';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const { provider, webSocketProvider } = configureChains(
+const { publicClient, webSocketPublicClient } = configureChains(
   [mainnet],
-  [publicProvider()],
-)
+  [publicProvider()]
+);
 
-const client = createClient({
+const config = createConfig({
   autoConnect: true,
-  provider,
-  webSocketProvider,
-})
+  publicClient,
+  webSocketPublicClient,
+});
 
-export default function Providers({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return <WagmiConfig client={client}>{children}</WagmiConfig>
+const queryClient = new QueryClient();
+
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <WagmiConfig config={config}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </WagmiConfig>
+  );
 }
