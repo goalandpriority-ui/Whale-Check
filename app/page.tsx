@@ -14,16 +14,16 @@ export default function Home() {
     <main style={{ padding: 20 }}>
       <h1>🐋 Whale Check</h1>
 
-      {!isConnected && (
+      {!isConnected ? (
         <button onClick={() => connect()}>
           Connect Wallet
         </button>
-      )}
-
-      {isConnected && (
+      ) : (
         <>
-          <p>Connected: {address}</p>
-          <button onClick={() => disconnect()}>Disconnect</button>
+          <p><b>Connected:</b> {address}</p>
+          <button onClick={() => disconnect()}>
+            Disconnect
+          </button>
         </>
       )}
     </main>
