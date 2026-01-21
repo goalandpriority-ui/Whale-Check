@@ -66,7 +66,7 @@ export default function Page() {
           </button>
         </>
       ) : (
-        <p>Wallet connect pannunga macha</p>
+        <h2>Connect wallet to check whale stats</h2>
       )}
     </div>
   );
