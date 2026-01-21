@@ -1,13 +1,18 @@
 'use client'
 
-import { WagmiProvider, createConfig, http } from 'wagmi'
+import { WagmiConfig, createClient, configureChains } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
+import { publicProvider } from 'wagmi/providers/public'
 
-const config = createConfig({
-  chains: [mainnet],
-  transports: {
-    [mainnet.id]: http(),
-  },
+const { provider, webSocketProvider } = configureChains(
+  [mainnet],
+  [publicProvider()],
+)
+
+const client = createClient({
+  autoConnect: true,
+  provider,
+  webSocketProvider,
 })
 
 export default function Providers({
@@ -15,5 +20,5 @@ export default function Providers({
 }: {
   children: React.ReactNode
 }) {
-  return <WagmiProvider config={config}>{children}</WagmiProvider>
+  return <WagmiConfig client={client}>{children}</WagmiConfig>
 }
