@@ -1,107 +1,98 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  useAccount,
-  useConnect,
-  useDisconnect,
-  useBalance,
-} from "wagmi";
+import { useEffect, useState } from "react";
+import { useAccount, useDisconnect, useBalance } from "wagmi";
+import { getWalletStats } from "@/lib/basescan";
 
 export default function HomePage() {
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isLoading } = useConnect();
   const { disconnect } = useDisconnect();
 
-  const [tokenAddressInput, setTokenAddressInput] = useState("");
-
-  const { data: ethBalance } = useBalance({ address });
-
-  const { data: customTokenBalance, isLoading: customTokenLoading } = useBalance({
+  // ETH Balance
+  const { data: ethBalance } = useBalance({
     address,
-    token: (tokenAddressInput && tokenAddressInput.startsWith("0x") ? tokenAddressInput : undefined) as `0x${string}` | undefined,
-    watch: true,
   });
 
+  // Token input
+  const [tokenAddress, setTokenAddress] = useState("");
+  const [tokenBalance, setTokenBalance] = useState<string | null>(null);
+
+  // Whale stats
+  const [txCount, setTxCount] = useState<number | null>(null);
+  const [totalVolume, setTotalVolume] = useState<string | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  // Fetch BaseScan stats
+  useEffect(() => {
+    if (!address) return;
+
+    const fetchStats = async () => {
+      setLoadingStats(true);
+      const stats = await getWalletStats(address);
+      setTxCount(stats.txCount);
+      setTotalVolume(stats.totalVolumeEth);
+      setLoadingStats(false);
+    };
+
+    fetchStats();
+  }, [address]);
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "black",
-        color: "white",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        flexDirection: "column",
-        gap: "16px",
-        padding: "20px",
-      }}
-    >
-      <h1>🐳 Whale Check</h1>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        🐳 Whale Check
+      </h1>
 
       {!isConnected && (
-        <>
-          {connectors.map((connector) => (
-            <button
-              key={connector.id}
-              onClick={() => connect({ connector })}
-              disabled={isLoading}
-              style={{
-                padding: "10px 16px",
-                background: "#2563eb",
-                color: "white",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              Connect {connector.name}
-            </button>
-          ))}
-        </>
+        <p className="text-gray-400">
+          Wallet connect pannunga macha
+        </p>
       )}
 
       {isConnected && (
         <>
-          <p>
+          <p className="mb-2">
             Address: {address?.slice(0, 6)}...{address?.slice(-4)}
           </p>
 
-          <p>
-            ETH Balance: {ethBalance ? `${Number(ethBalance.formatted).toFixed(4)} ETH` : "No balance"}
+          <p className="mb-4">
+            ETH Balance:{" "}
+            {ethBalance
+              ? `${Number(ethBalance.formatted).toFixed(4)} ETH`
+              : "No balance"}
           </p>
 
+          {/* Token input */}
           <input
             type="text"
             placeholder="Enter token contract address (e.g. USDT)"
-            value={tokenAddressInput}
-            onChange={(e) => setTokenAddressInput(e.target.value)}
-            style={{
-              padding: "8px",
-              borderRadius: "6px",
-              border: "none",
-              width: "280px",
-              marginBottom: "8px",
-            }}
+            value={tokenAddress}
+            onChange={(e) => setTokenAddress(e.target.value)}
+            className="w-full max-w-sm p-2 rounded text-black mb-3"
           />
 
-          <p>
+          <p className="mb-6">
             Token Balance:{" "}
-            {customTokenLoading
-              ? "Loading..."
-              : customTokenBalance
-              ? `${Number(customTokenBalance.formatted).toFixed(4)}`
-              : "No balance or invalid token address"}
+            {tokenBalance ?? "No balance or invalid token address"}
           </p>
+
+          {/* Whale stats */}
+          {loadingStats ? (
+            <p>Loading wallet activity...</p>
+          ) : (
+            <>
+              <p className="mb-2">
+                📊 Total Transactions: {txCount}
+              </p>
+              <p className="mb-6">
+                💰 Total Volume: {totalVolume} ETH
+              </p>
+            </>
+          )}
 
           <button
             onClick={() => disconnect()}
-            style={{
-              padding: "10px 16px",
-              background: "#dc2626",
-              color: "white",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
+            className="bg-red-600 px-6 py-2 rounded font-semibold"
           >
             Disconnect
           </button>
