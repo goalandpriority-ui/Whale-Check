@@ -1,9 +1,11 @@
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { metaMask } from "wagmi/connectors";
+import { InjectedConnector } from "wagmi/connectors/injected";
 
 export default function WalletStatus() {
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
+  const { connect } = useConnect({
+    connector: new InjectedConnector(),
+  });
   const { disconnect } = useDisconnect();
 
   if (isConnected) {
@@ -16,7 +18,7 @@ export default function WalletStatus() {
   }
 
   return (
-    <button onClick={() => connect({ connector: metaMask() })}>
+    <button onClick={() => connect()}>
       Connect Wallet
     </button>
   );
