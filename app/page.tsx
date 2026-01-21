@@ -7,17 +7,9 @@ import {
   useBalance,
 } from "wagmi";
 
-import { InjectedConnector } from "wagmi/connectors";
-
 export default function HomePage() {
   const { address, isConnected } = useAccount();
-
-  const connectors = [new InjectedConnector()];
-
-  const { connect, isLoading } = useConnect({
-    connectors,
-  });
-
+  const { connect, connectors, isLoading } = useConnect();
   const { disconnect } = useDisconnect();
 
   const { data: balance } = useBalance({
@@ -41,25 +33,29 @@ export default function HomePage() {
 
       {!isConnected && (
         <>
-          <button
-            onClick={() => connect({ connector: connectors[0] })}
-            disabled={isLoading}
-            style={{
-              padding: "10px 16px",
-              background: "#2563eb",
-              color: "white",
-              borderRadius: "8px",
-            }}
-          >
-            Connect Injected
-          </button>
+          {connectors.map((connector) => (
+            <button
+              key={connector.id}  {/* uid -> id */}
+              onClick={() => connect({ connector })}
+              disabled={isLoading}
+              style={{
+                padding: "10px 16px",
+                background: "#2563eb",
+                color: "white",
+                borderRadius: "8px",
+              }}
+            >
+              Connect {connector.name}
+            </button>
+          ))}
         </>
       )}
 
       {isConnected && (
         <>
           <p>
-            Address: {address?.slice(0, 6)}...{address?.slice(-4)}
+            Address:{" "}
+            {address?.slice(0, 6)}...{address?.slice(-4)}
           </p>
 
           <p>
