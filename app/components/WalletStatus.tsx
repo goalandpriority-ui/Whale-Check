@@ -5,9 +5,11 @@ import { InjectedConnector } from 'wagmi/connectors/injected';
 
 export default function WalletStatus() {
   const { address, isConnected } = useAccount();
+
   const { connect, isLoading } = useConnect({
     connector: new InjectedConnector(),
   });
+
   const { disconnect } = useDisconnect();
 
   if (isConnected) {
