@@ -1,103 +1,73 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAccount, useDisconnect, useBalance } from "wagmi";
-import { getWalletStats } from "@/lib/basescan";
+import React, { useState, useEffect } from "react";
+import { useAccount, useBalance } from "wagmi";
+import { classifyWallet, WalletType } from "../lib/classifyWallet";
 
-export default function HomePage() {
-  const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
-
-  // ETH Balance
-  const { data: ethBalance } = useBalance({
-    address,
-  });
-
-  // Token input
+export default function Page() {
+  const { address } = useAccount();
+  const { data: balanceData } = useBalance({ address });
   const [tokenAddress, setTokenAddress] = useState("");
   const [tokenBalance, setTokenBalance] = useState<string | null>(null);
+  const [tokenDecimals, setTokenDecimals] = useState<number | null>(null);
+  const [transactions, setTransactions] = useState(0);
+  const [volume, setVolume] = useState(0);
+  const [walletType, setWalletType] = useState<WalletType>("No Activity ❌");
 
-  // Whale stats
-  const [txCount, setTxCount] = useState<number | null>(null);
-  const [totalVolume, setTotalVolume] = useState<string | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-
-  // Fetch BaseScan stats
   useEffect(() => {
-    if (!address) return;
+    // Fake function to simulate fetching transaction count and volume
+    async function fetchTransactionsAndVolume() {
+      if (!address) return;
 
-    const fetchStats = async () => {
-      setLoadingStats(true);
-      const stats = await getWalletStats(address);
-      setTxCount(stats.txCount);
-      setTotalVolume(stats.totalVolumeEth);
-      setLoadingStats(false);
-    };
+      // Replace this with actual API call to fetch transactions and volume
+      // For now, dummy values:
+      const txCount = 120; // Example tx count
+      const txVolume = 1.2; // Example volume in ETH
 
-    fetchStats();
+      setTransactions(txCount);
+      setVolume(txVolume);
+
+      const type = classifyWallet(txCount, txVolume);
+      setWalletType(type);
+    }
+
+    fetchTransactionsAndVolume();
   }, [address]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
-      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-        🐳 Whale Check
-      </h1>
+    <div style={{ padding: 20 }}>
+      <h1>🐳 Whale Check</h1>
 
-      {!isConnected && (
-        <p className="text-gray-400">
-          <h2>Connect wallet to check whale stats</h2>
-        </p>
-      )}
-
-      {isConnected && (
+      {address ? (
         <>
-          <p className="mb-2">
-            Address: {address?.slice(0, 6)}...{address?.slice(-4)}
-          </p>
+          <p>Address: {address}</p>
+          <p>ETH Balance: {balanceData?.formatted ?? "No balance"}</p>
 
-          <p className="mb-4">
-            ETH Balance:{" "}
-            {ethBalance
-              ? `${Number(ethBalance.formatted).toFixed(4)} ETH`
-              : "No balance"}
-          </p>
-
-          {/* Token input */}
           <input
             type="text"
-            placeholder="Enter token contract address (e.g. USDT)"
+            placeholder="Enter token contract address"
             value={tokenAddress}
             onChange={(e) => setTokenAddress(e.target.value)}
-            className="w-full max-w-sm p-2 rounded text-black mb-3"
+            style={{ marginBottom: 10, width: "100%" }}
           />
 
-          <p className="mb-6">
-            Token Balance:{" "}
-            {tokenBalance ?? "No balance or invalid token address"}
-          </p>
+          <p>Token Balance: {tokenBalance ?? "No balance or invalid token address"}</p>
+          <p>📊 Total Transactions: {transactions}</p>
+          <p>💰 Total Volume: {volume} ETH</p>
 
-          {/* Whale stats */}
-          {loadingStats ? (
-            <p>Loading wallet activity...</p>
-          ) : (
-            <>
-              <p className="mb-2">
-                📊 Total Transactions: {txCount}
-              </p>
-              <p className="mb-6">
-                💰 Total Volume: {totalVolume} ETH
-              </p>
-            </>
-          )}
+          <h2>Wallet Type: {walletType}</h2>
 
           <button
-            onClick={() => disconnect()}
-            className="bg-red-600 px-6 py-2 rounded font-semibold"
+            onClick={() => {
+              // Disconnect logic if needed
+            }}
           >
             Disconnect
           </button>
         </>
+      ) : (
+        <p>Wallet connect pannunga macha</p>
       )}
-    </main>
+    </div>
   );
 }
