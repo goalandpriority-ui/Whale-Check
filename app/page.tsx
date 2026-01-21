@@ -13,19 +13,13 @@ export default function HomePage() {
   const { connect, connectors, isLoading } = useConnect();
   const { disconnect } = useDisconnect();
 
-  // State for user input token address
   const [tokenAddressInput, setTokenAddressInput] = useState("");
 
-  // Fetch ETH balance
-  const { data: ethBalance, isLoading: ethLoading } = useBalance({
-    address: address ?? undefined,
-    watch: true,
-  });
+  const { data: ethBalance } = useBalance({ address });
 
-  // Fetch dynamic token balance based on user input
   const { data: customTokenBalance, isLoading: customTokenLoading } = useBalance({
     address,
-    token: tokenAddressInput || undefined,
+    token: (tokenAddressInput && tokenAddressInput.startsWith("0x") ? tokenAddressInput : undefined) as `0x${string}` | undefined,
     watch: true,
   });
 
@@ -57,7 +51,7 @@ export default function HomePage() {
                 background: "#2563eb",
                 color: "white",
                 borderRadius: "8px",
-                marginBottom: "12px",
+                cursor: "pointer",
               }}
             >
               Connect {connector.name}
@@ -73,27 +67,20 @@ export default function HomePage() {
           </p>
 
           <p>
-            ETH Balance:{" "}
-            {ethLoading
-              ? "Loading..."
-              : ethBalance
-              ? `${Number(ethBalance.formatted).toFixed(4)} ETH`
-              : "No balance"}
+            ETH Balance: {ethBalance ? `${Number(ethBalance.formatted).toFixed(4)} ETH` : "No balance"}
           </p>
 
           <input
             type="text"
-            placeholder="Enter token contract address"
+            placeholder="Enter token contract address (e.g. USDT)"
             value={tokenAddressInput}
-            onChange={(e) => setTokenAddressInput(e.target.value.trim())}
+            onChange={(e) => setTokenAddressInput(e.target.value)}
             style={{
-              padding: "10px",
-              width: "300px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              marginTop: "20px",
-              marginBottom: "10px",
-              fontSize: "16px",
+              padding: "8px",
+              borderRadius: "6px",
+              border: "none",
+              width: "280px",
+              marginBottom: "8px",
             }}
           />
 
@@ -103,9 +90,7 @@ export default function HomePage() {
               ? "Loading..."
               : customTokenBalance
               ? `${Number(customTokenBalance.formatted).toFixed(4)}`
-              : tokenAddressInput
-              ? "No balance or invalid token"
-              : "-"}
+              : "No balance or invalid token address"}
           </p>
 
           <button
@@ -115,7 +100,7 @@ export default function HomePage() {
               background: "#dc2626",
               color: "white",
               borderRadius: "8px",
-              marginTop: "30px",
+              cursor: "pointer",
             }}
           >
             Disconnect
