@@ -1,38 +1,32 @@
-'use client'
+'use client';
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
-export default function Home() {
-  const { address, isConnected } = useAccount()
-  const { connect, connectors, status, error } = useConnect()
-  const { disconnect } = useDisconnect()
+export default function Page() {
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
 
   return (
-    <div style={{ padding: 20 }}>
+    <main style={{ padding: 20 }}>
+      <h1>🐳 Whale Check – Base</h1>
+
       {!isConnected && (
-        <>
-          {connectors.length === 0 ? (
-            <p>
-              ❌ No wallet detected.<br />
-              👉 Open this site inside MetaMask browser
-            </p>
-          ) : (
-            <button onClick={() => connect({ connector: connectors[0] })}>
-              Connect Wallet
-            </button>
-          )}
-        </>
+        <button onClick={() => connect({ connector: connectors[0] })}>
+          Connect Wallet
+        </button>
       )}
 
       {isConnected && (
         <>
-          <p>✅ Connected: {address}</p>
-          <button onClick={() => disconnect()}>Disconnect</button>
+          <p>Connected Address:</p>
+          <code>{address}</code>
+          <br /><br />
+          <button onClick={() => disconnect()}>
+            Disconnect
+          </button>
         </>
       )}
-
-      {status === 'pending' && <p>Connecting...</p>}
-      {error && <p>Error: {error.message}</p>}
-    </div>
-  )
+    </main>
+  );
 }
