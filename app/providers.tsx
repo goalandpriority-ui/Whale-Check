@@ -5,17 +5,17 @@ import { base } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const queryClient = new QueryClient()
-
 const config = createConfig({
   chains: [base],
   connectors: [
-    injected({ shimDisconnect: true }),
+    injected()
   ],
   transports: {
-    [base.id]: http(),
-  },
+    [base.id]: http()
+  }
 })
+
+const queryClient = new QueryClient()
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
