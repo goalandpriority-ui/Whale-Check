@@ -9,26 +9,23 @@ export default function Page() {
 
   if (isConnected) {
     return (
-      <div style={{ padding: 20 }}>
-        <p>Connected wallet:</p>
+      <div>
+        <p>Connected:</p>
         <b>{address}</b>
-        <br /><br />
-        <button onClick={() => disconnect()}>
-          Disconnect
-        </button>
+        <br />
+        <button onClick={() => disconnect()}>Disconnect</button>
       </div>
     )
   }
 
   return (
-    <div style={{ padding: 20 }}>
+    <div>
       {connectors.map((connector) => (
         <button
           key={connector.uid}
           onClick={() => connect({ connector })}
-          style={{ marginRight: 10 }}
         >
-          Connect {connector.name}
+          Connect Wallet
         </button>
       ))}
     </div>
