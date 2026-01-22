@@ -10,7 +10,7 @@ const queryClient = new QueryClient()
 const config = createConfig({
   chains: [base],
   connectors: [
-    injected(), // MetaMask (browser extension)
+    injected(),
   ],
   transports: {
     [base.id]: http(),
