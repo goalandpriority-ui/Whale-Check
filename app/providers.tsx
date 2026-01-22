@@ -1,6 +1,6 @@
 'use client';
 
-import { WagmiProvider, createConfig } from 'wagmi';
+import { WagmiProvider, createConfig, http } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { injected } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,6 +8,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const config = createConfig({
   chains: [base],
   connectors: [injected()],
+  transports: {
+    [base.id]: http(),
+  },
   ssr: true,
 });
 
