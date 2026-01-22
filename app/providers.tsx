@@ -7,9 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const config = createConfig({
   chains: [base],
-  connectors: [
-    injected(),
-  ],
+  connectors: [injected()],
   transports: {
     [base.id]: http(),
   },
