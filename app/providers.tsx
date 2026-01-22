@@ -10,7 +10,7 @@ const queryClient = new QueryClient()
 const config = createConfig({
   chains: [base],
   connectors: [
-    injected(),
+    injected({ shimDisconnect: true }),
   ],
   transports: {
     [base.id]: http(),
