@@ -4,23 +4,39 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 export default function Page() {
   const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { connect, connectors, isPending, error } = useConnect();
   const { disconnect } = useDisconnect();
 
   if (isConnected) {
     return (
-      <div>
-        <p>Connected: {address}</p>
-        <button onClick={() => disconnect()}>Disconnect</button>
+      <div style={{ padding: 20 }}>
+        <h2>Wallet Connected ✅</h2>
+        <p><b>Address:</b> {address}</p>
+
+        <button onClick={() => disconnect()}>
+          Disconnect
+        </button>
       </div>
     );
   }
 
   return (
-    <div>
-      <button onClick={() => connect({ connector: connectors[0] })}>
-        Connect Wallet
-      </button>
+    <div style={{ padding: 20 }}>
+      <h2>Connect your Wallet</h2>
+
+      {connectors.map((connector) => (
+        <button
+          key={connector.uid}
+          onClick={() => connect({ connector })}
+          disabled={!connector.ready || isPending}
+          style={{ display: 'block', marginBottom: 10 }}
+        >
+          {connector.name}
+          {!connector.ready && ' (not supported)'}
+        </button>
+      ))}
+
+      {error && <p style={{ color: 'red' }}>{error.message}</p>}
     </div>
   );
 }
