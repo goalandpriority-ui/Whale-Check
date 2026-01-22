@@ -1,29 +1,28 @@
-'use client';
+"use client";
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { injected } from "wagmi/connectors";
 
-export default function Home() {
+export default function Page() {
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect({
-    connector: new InjectedConnector(),
-  });
+  const { connect } = useConnect();
   const { disconnect } = useDisconnect();
 
   return (
-    <main style={{ padding: 20 }}>
-      <h1>🐋 Whale Check</h1>
+    <main style={{ padding: 24 }}>
+      <h1>🐋 Whale Check (Base)</h1>
 
       {!isConnected ? (
-        <button onClick={() => connect()}>
+        <button onClick={() => connect({ connector: injected() })}>
           Connect Wallet
         </button>
       ) : (
         <>
-          <p><b>Connected:</b> {address}</p>
-          <button onClick={() => disconnect()}>
-            Disconnect
-          </button>
+          <p>Connected wallet:</p>
+          <b>{address}</b>
+          <br />
+          <br />
+          <button onClick={() => disconnect()}>Disconnect</button>
         </>
       )}
     </main>
