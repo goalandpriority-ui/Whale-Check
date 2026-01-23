@@ -1,32 +1,28 @@
-'use client';
+'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import WalletStatus from '@/components/WalletStatus'
 
 export default function Page() {
-  const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
-  const { disconnect } = useDisconnect();
-
   return (
-    <main style={{ padding: 20 }}>
-      <h1>🐳 Whale Check – Base</h1>
+    <main
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '16px',
+      }}
+    >
+      <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>
+        Base Whale Checker 🐋
+      </h1>
 
-      {!isConnected && (
-        <button onClick={() => connect({ connector: connectors[0] })}>
-          Connect Wallet
-        </button>
-      )}
+      <p style={{ color: '#666', textAlign: 'center', maxWidth: '300px' }}>
+        Connect your wallet to check Base chain whale transactions
+      </p>
 
-      {isConnected && (
-        <>
-          <p>Connected Address:</p>
-          <code>{address}</code>
-          <br /><br />
-          <button onClick={() => disconnect()}>
-            Disconnect
-          </button>
-        </>
-      )}
+      <WalletStatus />
     </main>
-  );
+  )
 }
