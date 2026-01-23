@@ -1,25 +1,32 @@
 'use client';
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { base } from 'wagmi/chains';
 import { injected } from 'wagmi/connectors';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 
-export default function WalletStatus() {
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
+const config = createConfig({
+  chains: [base],
+  connectors: [
+    injected({
+      shimDisconnect: true,
+    }),
+  ],
+  transports: {
+    [base.id]: http(),
+  },
+  ssr: false,
+});
 
-  if (isConnected) {
-    return (
-      <div>
-        <p>Connected: {address}</p>
-        <button onClick={() => disconnect()}>Disconnect</button>
-      </div>
-    );
-  }
+const queryClient = new QueryClient();
 
+export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <button onClick={() => connect({ connector: injected() })}>
-      Connect Wallet
-    </button>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
