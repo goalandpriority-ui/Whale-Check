@@ -1,12 +1,11 @@
-'use client';
+'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { injected } from 'wagmi/connectors';
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
 
 export default function WalletStatus() {
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { address, isConnected } = useAccount()
+  const { connect, connectors } = useConnect()
+  const { disconnect } = useDisconnect()
 
   if (isConnected) {
     return (
@@ -14,12 +13,19 @@ export default function WalletStatus() {
         <p>Connected: {address}</p>
         <button onClick={() => disconnect()}>Disconnect</button>
       </div>
-    );
+    )
   }
 
   return (
-    <button onClick={() => connect({ connector: injected() })}>
-      Connect Wallet
-    </button>
-  );
+    <div>
+      {connectors.map((connector) => (
+        <button
+          key={connector.uid}
+          onClick={() => connect({ connector })}
+        >
+          Connect Wallet
+        </button>
+      ))}
+    </div>
+  )
 }
