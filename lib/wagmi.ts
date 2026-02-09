@@ -4,9 +4,7 @@ import { injected } from 'wagmi/connectors'
 
 export const config = createConfig({
   chains: [base],
-  connectors: [
-    injected(),
-  ],
+  connectors: [injected()],
   transports: {
     [base.id]: http(),
   },
