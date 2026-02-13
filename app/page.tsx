@@ -13,40 +13,39 @@ export default function Home() {
 
   const fetchTransactions = async () => {
     if (!address) return
-
     setLoading(true)
 
     try {
-      const res = await fetch(
-        `https://api.basescan.org/api/v2/accounts/${address}/transactions?startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+      // 1️⃣ Fetch wallet transactions from BaseScan V2
+      const txRes = await fetch(
+        `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
+      const txData = await txRes.json()
 
-      const data = await res.json()
+      if (txData.status === "1" && txData.result.length > 0) {
+        setTxCount(txData.result.length)
 
-      if (data.status === "1" && data.result.length > 0) {
-        setTxCount(data.result.length)
-
-        // Calculate total ETH sent by this wallet
-        const totalWei = data.result.reduce((acc: number, tx: any) => {
-          if (tx.from.toLowerCase() === address.toLowerCase()) {
-            return acc + Number(tx.value)
-          }
-          return acc
+        // 2️⃣ Sum total ETH sent
+        const ethSum = txData.result.reduce((acc: number, tx: any) => {
+          return acc + Number(tx.value) / 1e18
         }, 0)
+        setTotalEth(ethSum)
 
-        const ethTotal = totalWei / 1e18
-        setTotalEth(ethTotal)
+        // 3️⃣ Fetch live ETH price in USD
+        const priceRes = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+        )
+        const priceData = await priceRes.json()
+        const ethPrice = priceData.ethereum.usd
 
-        // Example: Convert to USD using fixed ETH price (replace with API if needed)
-        const ethPriceUSD = 1900 // update dynamically if needed
-        setTotalUSD(ethTotal * ethPriceUSD)
+        // 4️⃣ Calculate USD volume
+        setTotalUSD(ethSum * ethPrice)
 
       } else {
         setTxCount(0)
         setTotalEth(0)
         setTotalUSD(0)
       }
-
     } catch (err) {
       console.error(err)
       setTxCount(0)
