@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount } from 'wagmi'
+import { createPublicClient, http } from 'viem'
+import { base } from 'viem/chains'
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http()
+})
 
 export default function Home() {
   const { address, isConnected } = useAccount()
@@ -15,28 +22,12 @@ export default function Home() {
     setLoading(true)
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_BASESCAN_API
+      // Get total sent transactions (nonce)
+      const nonce = await publicClient.getTransactionCount({
+        address: address as `0x${string}`
+      })
 
-      const normalTx = await fetch(
-        `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
-      ).then(res => res.json())
-
-      const internalTx = await fetch(
-        `https://api.basescan.org/api?module=account&action=txlistinternal&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
-      ).then(res => res.json())
-
-      const tokenTx = await fetch(
-        `https://api.basescan.org/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
-      ).then(res => res.json())
-
-      const normalCount = normalTx.status === "1" ? normalTx.result.length : 0
-      const internalCount = internalTx.status === "1" ? internalTx.result.length : 0
-      const tokenCount = tokenTx.status === "1" ? tokenTx.result.length : 0
-
-      const total = normalCount + internalCount + tokenCount
-
-      setTxCount(total)
-
+      setTxCount(Number(nonce))
     } catch (err) {
       console.error(err)
       setTxCount(0)
@@ -78,7 +69,7 @@ export default function Home() {
 
           {txCount !== null && !loading && (
             <div className="text-center mt-4">
-              <p>Total Activity Count: {txCount}</p>
+              <p>Total Sent Transactions: {txCount}</p>
               <p className="text-2xl font-bold mt-2">
                 {classifyWallet()}
               </p>
