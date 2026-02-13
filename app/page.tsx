@@ -16,29 +16,28 @@ export default function Home() {
     setLoading(true)
 
     try {
-      // BaseScan V2 API fetch
+      // 1️⃣ Fetch transactions from BaseScan V2
       const res = await fetch(
         `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
       const data = await res.json()
 
-      if (data.status === "1" && data.result) {
-        const txs = data.result
+      // 2️⃣ Count transactions & calculate ETH volume
+      if (data.status === "1" && Array.isArray(data.result)) {
+        setTxCount(data.result.length)
 
-        setTxCount(txs.length)
-
-        // Total ETH sent (sum of 'value' field, value is in Wei)
-        const totalWei = txs.reduce((acc: number, tx: any) => {
-          return acc + Number(tx.value)
+        const ethSum = data.result.reduce((sum: number, tx: any) => {
+          return sum + parseFloat(tx.value) / 1e18 // value in wei -> ETH
         }, 0)
-        const totalEth = totalWei / 1e18
-        setTotalEth(totalEth)
 
-        // Fetch ETH to USD
+        setTotalEth(ethSum)
+
+        // 3️⃣ Fetch ETH price from Coinbase
         const priceRes = await fetch(process.env.NEXT_PUBLIC_ETH_PRICE_API!)
         const priceData = await priceRes.json()
-        const ethPriceUSD = parseFloat(priceData.data.amount)
-        setTotalUSD(totalEth * ethPriceUSD)
+        const ethPrice = parseFloat(priceData.data.amount)
+
+        setTotalUSD(ethSum * ethPrice)
       } else {
         setTxCount(0)
         setTotalEth(0)
@@ -90,7 +89,9 @@ export default function Home() {
               <p>Total Sent Transactions: {txCount}</p>
               <p>Total ETH Volume Sent: {totalEth?.toFixed(4)} ETH</p>
               <p>Total USD Volume: ${totalUSD?.toFixed(2)}</p>
-              <p className="text-2xl font-bold mt-2">{classifyWallet()}</p>
+              <p className="text-2xl font-bold mt-2">
+                {classifyWallet()}
+              </p>
             </div>
           )}
         </>
