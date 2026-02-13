@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Optional smooth dark base */
 body {
   background-color: black;
   color: white;
