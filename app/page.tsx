@@ -15,27 +15,38 @@ export default function Home() {
     setLoading(true)
 
     try {
-      const res = await fetch(
-        `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API}`
-      )
+      const apiKey = process.env.NEXT_PUBLIC_BASESCAN_API
 
-      const data = await res.json()
+      const normalTx = await fetch(
+        `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
+      ).then(res => res.json())
 
-      if (data.status === "1") {
-        setTxCount(data.result.length)
-      } else {
-        setTxCount(0)
-      }
+      const internalTx = await fetch(
+        `https://api.basescan.org/api?module=account&action=txlistinternal&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
+      ).then(res => res.json())
+
+      const tokenTx = await fetch(
+        `https://api.basescan.org/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
+      ).then(res => res.json())
+
+      const normalCount = normalTx.status === "1" ? normalTx.result.length : 0
+      const internalCount = internalTx.status === "1" ? internalTx.result.length : 0
+      const tokenCount = tokenTx.status === "1" ? tokenTx.result.length : 0
+
+      const total = normalCount + internalCount + tokenCount
+
+      setTxCount(total)
 
     } catch (err) {
       console.error(err)
+      setTxCount(0)
     }
 
     setLoading(false)
   }
 
   const classifyWallet = () => {
-    if (!txCount) return "No Activity 💤"
+    if (!txCount || txCount === 0) return "No Activity 💤"
     if (txCount < 10) return "Shrimp 🦐"
     if (txCount < 100) return "Dolphin 🐬"
     if (txCount < 1000) return "Whale 🐋"
@@ -67,7 +78,7 @@ export default function Home() {
 
           {txCount !== null && !loading && (
             <div className="text-center mt-4">
-              <p>Total Transactions: {txCount}</p>
+              <p>Total Activity Count: {txCount}</p>
               <p className="text-2xl font-bold mt-2">
                 {classifyWallet()}
               </p>
