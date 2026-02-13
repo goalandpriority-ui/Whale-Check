@@ -13,34 +13,33 @@ export default function Home() {
 
   const fetchTransactions = async () => {
     if (!address) return
+
     setLoading(true)
 
     try {
+      // BaseScan V2 endpoint
       const res = await fetch(
-        `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+        `https://api.basescan.org/api/v2/accounts/${address}/transactions?apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
       const data = await res.json()
-      if (data.status === "1" && data.result) {
-        const txs = data.result
-        setTxCount(txs.length)
 
-        // Total ETH sent calculation
-        const totalEth = txs.reduce((sum: number, tx: any) => {
-          if (tx.from.toLowerCase() === address.toLowerCase()) {
-            return sum + Number(tx.value) / 1e18
-          }
-          return sum
-        }, 0)
+      if (data && data.txs) {
+        const sentTxs = data.txs.filter((tx: any) => tx.from.toLowerCase() === address.toLowerCase())
+        setTxCount(sentTxs.length)
+
+        const totalEth = sentTxs.reduce((sum: number, tx: any) => sum + Number(tx.value) / 1e18, 0)
         setEthVolume(totalEth)
 
-        // USD conversion (simple, static ETH price example)
-        const ETH_PRICE = 1800 // replace with live fetch if needed
-        setUsdVolume(totalEth * ETH_PRICE)
+        // Simple USD conversion
+        // Assume 1 ETH = 1800 USD (update dynamically if needed)
+        const totalUSD = totalEth * 1800
+        setUsdVolume(totalUSD)
       } else {
         setTxCount(0)
         setEthVolume(0)
         setUsdVolume(0)
       }
+
     } catch (err) {
       console.error(err)
       setTxCount(0)
