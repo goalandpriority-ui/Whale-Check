@@ -1,11 +1,5 @@
 import './globals.css'
-import Providers from '@/components/Providers'
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = {
-  title: 'Base Whale Checker',
-  description: 'Check Base chain whale transactions',
-}
+import { Providers } from '../components/Providers'
 
 export default function RootLayout({
   children,
