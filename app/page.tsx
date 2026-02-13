@@ -16,15 +16,39 @@ export default function Home() {
     setLoading(true)
 
     try {
-      const res = await fetch(`/api/txs?address=${address}`)
+      // BaseScan V2 API fetch
+      const res = await fetch(
+        `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+      )
       const data = await res.json()
 
-      setTxCount(data.txCount)
-      setTotalEth(data.totalEth)
-      setTotalUSD(data.totalUSD)
+      if (data.status === "1" && data.result) {
+        const txs = data.result
 
+        setTxCount(txs.length)
+
+        // Total ETH sent (sum of 'value' field, value is in Wei)
+        const totalWei = txs.reduce((acc: number, tx: any) => {
+          return acc + Number(tx.value)
+        }, 0)
+        const totalEth = totalWei / 1e18
+        setTotalEth(totalEth)
+
+        // Fetch ETH to USD
+        const priceRes = await fetch(process.env.NEXT_PUBLIC_ETH_PRICE_API!)
+        const priceData = await priceRes.json()
+        const ethPriceUSD = parseFloat(priceData.data.amount)
+        setTotalUSD(totalEth * ethPriceUSD)
+      } else {
+        setTxCount(0)
+        setTotalEth(0)
+        setTotalUSD(0)
+      }
     } catch (err) {
       console.error(err)
+      setTxCount(0)
+      setTotalEth(0)
+      setTotalUSD(0)
     }
 
     setLoading(false)
