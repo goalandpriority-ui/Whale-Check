@@ -16,6 +16,7 @@ export default function Home() {
     setLoading(true)
 
     try {
+      // BaseScan V2 endpoint
       const res = await fetch(
         `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
@@ -25,12 +26,14 @@ export default function Home() {
         const totalTx = data.result.length
         setTxCount(totalTx)
 
+        // Total ETH sent
         const ethSum = data.result.reduce(
           (acc: number, tx: any) => acc + parseFloat(tx.value) / 1e18,
           0
         )
         setTotalEth(ethSum)
 
+        // Fetch ETH price in USD
         const usdRes = await fetch(
           `https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd`
         )
@@ -43,6 +46,9 @@ export default function Home() {
       }
     } catch (err) {
       console.error(err)
+      setTxCount(0)
+      setTotalEth(0)
+      setTotalUSD(0)
     }
 
     setLoading(false)
