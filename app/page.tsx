@@ -8,36 +8,44 @@ export default function Home() {
   const { address, isConnected } = useAccount()
   const [txCount, setTxCount] = useState<number | null>(null)
   const [ethVolume, setEthVolume] = useState<number | null>(null)
+  const [usdVolume, setUsdVolume] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
 
   const fetchTransactions = async () => {
     if (!address) return
-
     setLoading(true)
 
     try {
       const res = await fetch(
-        `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+        `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
       const data = await res.json()
+      if (data.status === "1" && data.result) {
+        const txs = data.result
+        setTxCount(txs.length)
 
-      if (data.status === "1") {
-        setTxCount(data.result.length)
-
-        // Calculate total ETH sent
-        const totalEth = data.result.reduce((acc: number, tx: any) => {
-          return acc + parseFloat(tx.value) / 1e18
+        // Total ETH sent calculation
+        const totalEth = txs.reduce((sum: number, tx: any) => {
+          if (tx.from.toLowerCase() === address.toLowerCase()) {
+            return sum + Number(tx.value) / 1e18
+          }
+          return sum
         }, 0)
         setEthVolume(totalEth)
+
+        // USD conversion (simple, static ETH price example)
+        const ETH_PRICE = 1800 // replace with live fetch if needed
+        setUsdVolume(totalEth * ETH_PRICE)
       } else {
         setTxCount(0)
         setEthVolume(0)
+        setUsdVolume(0)
       }
-
     } catch (err) {
       console.error(err)
       setTxCount(0)
       setEthVolume(0)
+      setUsdVolume(0)
     }
 
     setLoading(false)
@@ -50,8 +58,6 @@ export default function Home() {
     if (txCount < 1000) return "Whale 🐋"
     return "Mega Whale 🦈"
   }
-
-  const usdVolume = ethVolume ? (ethVolume * 1900).toFixed(2) : "0.00" // Example ETH price $1900, you can fetch live price later
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6 p-6">
@@ -79,8 +85,8 @@ export default function Home() {
           {txCount !== null && !loading && (
             <div className="text-center mt-4">
               <p>Total Sent Transactions: {txCount}</p>
-              <p>Total ETH Volume Sent: {ethVolume?.toFixed(4) || "0.0000"} ETH</p>
-              <p>Total USD Volume: ${usdVolume}</p>
+              <p>Total ETH Volume Sent: {ethVolume?.toFixed(4)} ETH</p>
+              <p>Total USD Volume: ${usdVolume?.toFixed(2)}</p>
               <p className="text-2xl font-bold mt-2">{classifyWallet()}</p>
             </div>
           )}
