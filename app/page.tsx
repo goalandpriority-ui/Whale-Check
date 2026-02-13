@@ -7,44 +7,48 @@ import { useAccount } from 'wagmi'
 export default function Home() {
   const { address, isConnected } = useAccount()
   const [txCount, setTxCount] = useState<number | null>(null)
-  const [ethVolume, setEthVolume] = useState<number | null>(null)
-  const [usdVolume, setUsdVolume] = useState<number | null>(null)
+  const [totalEth, setTotalEth] = useState<number | null>(null)
+  const [totalUSD, setTotalUSD] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
 
   const fetchTransactions = async () => {
     if (!address) return
-
     setLoading(true)
 
     try {
-      // BaseScan V2 endpoint
       const res = await fetch(
-        `https://api.basescan.org/api/v2/accounts/${address}/transactions?apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+        `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
       const data = await res.json()
 
-      if (data && data.txs) {
-        const sentTxs = data.txs.filter((tx: any) => tx.from.toLowerCase() === address.toLowerCase())
+      if (data.status === "1" && data.result) {
+        // Sent transactions only
+        const sentTxs = data.result.filter(
+          (tx: any) => tx.from.toLowerCase() === address.toLowerCase()
+        )
+
         setTxCount(sentTxs.length)
 
-        const totalEth = sentTxs.reduce((sum: number, tx: any) => sum + Number(tx.value) / 1e18, 0)
-        setEthVolume(totalEth)
+        const ethVolume = sentTxs.reduce(
+          (sum: number, tx: any) => sum + Number(tx.value) / 1e18,
+          0
+        )
+        setTotalEth(ethVolume)
 
-        // Simple USD conversion
-        // Assume 1 ETH = 1800 USD (update dynamically if needed)
-        const totalUSD = totalEth * 1800
-        setUsdVolume(totalUSD)
+        // USD conversion (static example, replace with live price later)
+        const usdVolume = ethVolume * 1800
+        setTotalUSD(usdVolume)
+
       } else {
         setTxCount(0)
-        setEthVolume(0)
-        setUsdVolume(0)
+        setTotalEth(0)
+        setTotalUSD(0)
       }
-
     } catch (err) {
       console.error(err)
       setTxCount(0)
-      setEthVolume(0)
-      setUsdVolume(0)
+      setTotalEth(0)
+      setTotalUSD(0)
     }
 
     setLoading(false)
@@ -84,8 +88,8 @@ export default function Home() {
           {txCount !== null && !loading && (
             <div className="text-center mt-4">
               <p>Total Sent Transactions: {txCount}</p>
-              <p>Total ETH Volume Sent: {ethVolume?.toFixed(4)} ETH</p>
-              <p>Total USD Volume: ${usdVolume?.toFixed(2)}</p>
+              <p>Total ETH Volume Sent: {totalEth?.toFixed(4)} ETH</p>
+              <p>Total USD Volume: ${totalUSD?.toFixed(2)}</p>
               <p className="text-2xl font-bold mt-2">{classifyWallet()}</p>
             </div>
           )}
