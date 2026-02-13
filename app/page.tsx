@@ -4,55 +4,40 @@ import { useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount } from 'wagmi'
 
-// You can replace this with a real ETH price API
-const ETH_PRICE_USD = 1900 // Example: 1 ETH = $1900
-
 export default function Home() {
   const { address, isConnected } = useAccount()
   const [txCount, setTxCount] = useState<number | null>(null)
   const [ethVolume, setEthVolume] = useState<number | null>(null)
-  const [usdVolume, setUsdVolume] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
 
   const fetchTransactions = async () => {
     if (!address) return
+
     setLoading(true)
 
     try {
-      // V2 API endpoint
       const res = await fetch(
-        `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API}`
+        `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
       const data = await res.json()
-      console.log('V2 API result:', data) // Debugging
 
-      if (data.status === '1' && Array.isArray(data.result)) {
-        // Filter only sent transactions
-        const sentTxs = data.result.filter(
-          (tx: any) => tx.from.toLowerCase() === address.toLowerCase()
-        )
+      if (data.status === "1") {
+        setTxCount(data.result.length)
 
-        setTxCount(sentTxs.length)
-
-        // Sum total ETH sent
-        const totalEth = sentTxs.reduce(
-          (sum: number, tx: any) => sum + Number(tx.value) / 1e18,
-          0
-        )
+        // Calculate total ETH sent
+        const totalEth = data.result.reduce((acc: number, tx: any) => {
+          return acc + parseFloat(tx.value) / 1e18
+        }, 0)
         setEthVolume(totalEth)
-
-        // USD volume
-        setUsdVolume(totalEth * ETH_PRICE_USD)
       } else {
         setTxCount(0)
         setEthVolume(0)
-        setUsdVolume(0)
       }
+
     } catch (err) {
       console.error(err)
       setTxCount(0)
       setEthVolume(0)
-      setUsdVolume(0)
     }
 
     setLoading(false)
@@ -65,6 +50,8 @@ export default function Home() {
     if (txCount < 1000) return "Whale 🐋"
     return "Mega Whale 🦈"
   }
+
+  const usdVolume = ethVolume ? (ethVolume * 1900).toFixed(2) : "0.00" // Example ETH price $1900, you can fetch live price later
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6 p-6">
@@ -90,10 +77,10 @@ export default function Home() {
           {loading && <p>Loading transactions...</p>}
 
           {txCount !== null && !loading && (
-            <div className="text-center mt-4 space-y-2">
+            <div className="text-center mt-4">
               <p>Total Sent Transactions: {txCount}</p>
-              <p>Total ETH Volume Sent: {ethVolume?.toFixed(4)} ETH</p>
-              <p>Total USD Volume: ${usdVolume?.toFixed(2)}</p>
+              <p>Total ETH Volume Sent: {ethVolume?.toFixed(4) || "0.0000"} ETH</p>
+              <p>Total USD Volume: ${usdVolume}</p>
               <p className="text-2xl font-bold mt-2">{classifyWallet()}</p>
             </div>
           )}
