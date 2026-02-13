@@ -13,37 +13,40 @@ export default function Home() {
 
   const fetchTransactions = async () => {
     if (!address) return
+
     setLoading(true)
 
     try {
-      // BaseScan V2 endpoint
       const res = await fetch(
-        `https://api.basescan.org/api/v2?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
+        `https://api.basescan.org/api/v2/accounts/${address}/transactions?startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
+
       const data = await res.json()
 
-      if (data.status === "1") {
-        const totalTx = data.result.length
-        setTxCount(totalTx)
+      if (data.status === "1" && data.result.length > 0) {
+        setTxCount(data.result.length)
 
-        // Total ETH sent
-        const ethSum = data.result.reduce(
-          (acc: number, tx: any) => acc + parseFloat(tx.value) / 1e18,
-          0
-        )
-        setTotalEth(ethSum)
+        // Calculate total ETH sent by this wallet
+        const totalWei = data.result.reduce((acc: number, tx: any) => {
+          if (tx.from.toLowerCase() === address.toLowerCase()) {
+            return acc + Number(tx.value)
+          }
+          return acc
+        }, 0)
 
-        // Fetch ETH price in USD
-        const usdRes = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd`
-        )
-        const usdData = await usdRes.json()
-        setTotalUSD(ethSum * usdData.ethereum.usd)
+        const ethTotal = totalWei / 1e18
+        setTotalEth(ethTotal)
+
+        // Example: Convert to USD using fixed ETH price (replace with API if needed)
+        const ethPriceUSD = 1900 // update dynamically if needed
+        setTotalUSD(ethTotal * ethPriceUSD)
+
       } else {
         setTxCount(0)
         setTotalEth(0)
         setTotalUSD(0)
       }
+
     } catch (err) {
       console.error(err)
       setTxCount(0)
@@ -90,7 +93,9 @@ export default function Home() {
               <p>Total Sent Transactions: {txCount}</p>
               <p>Total ETH Volume Sent: {totalEth?.toFixed(4)} ETH</p>
               <p>Total USD Volume: ${totalUSD?.toFixed(2)}</p>
-              <p className="text-2xl font-bold mt-2">{classifyWallet()}</p>
+              <p className="text-2xl font-bold mt-2">
+                {classifyWallet()}
+              </p>
             </div>
           )}
         </>
