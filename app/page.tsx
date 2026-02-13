@@ -3,60 +3,63 @@
 import { useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount } from 'wagmi'
-import axios from 'axios'
 
 export default function Home() {
   const { address, isConnected } = useAccount()
-  const [txCount, setTxCount] = useState<number | null>(null)
-  const [totalEth, setTotalEth] = useState<number | null>(null)
-  const [totalUsd, setTotalUsd] = useState<number | null>(null)
+
+  const [txCount, setTxCount] = useState<number>(0)
+  const [ethVolume, setEthVolume] = useState<number>(0)
+  const [usdVolume, setUsdVolume] = useState<number>(0)
   const [loading, setLoading] = useState(false)
 
   const fetchTransactions = async () => {
     if (!address) return
 
     setLoading(true)
+    setTxCount(0)
+    setEthVolume(0)
+    setUsdVolume(0)
+
     try {
-      // 1️⃣ Fetch wallet transactions from BaseScan API
+      // 1️⃣ Fetch all transactions
       const res = await fetch(
         `https://api.basescan.org/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.NEXT_PUBLIC_BASESCAN_API_KEY}`
       )
       const data = await res.json()
 
-      if (data.status === "1") {
-        setTxCount(data.result.length)
-
-        // 2️⃣ Calculate total ETH sent
-        const totalEthSent = data.result.reduce((acc: number, tx: any) => {
-          // Convert value from Wei to ETH
-          return acc + Number(tx.value) / 1e18
-        }, 0)
-        setTotalEth(totalEthSent)
-
-        // 3️⃣ Fetch ETH price in USD from CoinGecko
-        const priceRes = await axios.get(
-          'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
-        )
-        const ethPriceUsd = priceRes.data.ethereum.usd
-        setTotalUsd(totalEthSent * ethPriceUsd)
-
-      } else {
+      if (data.status !== "1") {
         setTxCount(0)
-        setTotalEth(0)
-        setTotalUsd(0)
+        setEthVolume(0)
+        setUsdVolume(0)
+        setLoading(false)
+        return
       }
 
+      const txs = data.result
+      setTxCount(txs.length)
+
+      // 2️⃣ Calculate total ETH sent
+      const totalEth = txs.reduce((sum: number, tx: any) => {
+        return sum + parseFloat(tx.value) / 1e18
+      }, 0)
+      setEthVolume(totalEth)
+
+      // 3️⃣ Get current ETH price in USD
+      const priceRes = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+      )
+      const priceData = await priceRes.json()
+      const ethPrice = priceData.ethereum.usd
+      setUsdVolume(totalEth * ethPrice)
     } catch (err) {
       console.error(err)
-      setTxCount(0)
-      setTotalEth(0)
-      setTotalUsd(0)
     }
+
     setLoading(false)
   }
 
   const classifyWallet = () => {
-    if (!txCount || txCount === 0) return "No Activity 💤"
+    if (txCount === 0) return "No Activity 💤"
     if (txCount < 10) return "Shrimp 🦐"
     if (txCount < 100) return "Dolphin 🐬"
     if (txCount < 1000) return "Whale 🐋"
@@ -86,11 +89,11 @@ export default function Home() {
 
           {loading && <p>Loading transactions...</p>}
 
-          {txCount !== null && !loading && (
+          {!loading && (
             <div className="text-center mt-4">
               <p>Total Sent Transactions: {txCount}</p>
-              <p>Total ETH Volume Sent: {totalEth?.toFixed(4)} ETH</p>
-              <p>Total USD Volume: ${totalUsd?.toFixed(2)}</p>
+              <p>Total ETH Volume Sent: {ethVolume.toFixed(4)} ETH</p>
+              <p>Total USD Volume: ${usdVolume.toFixed(2)}</p>
               <p className="text-2xl font-bold mt-2">{classifyWallet()}</p>
             </div>
           )}
