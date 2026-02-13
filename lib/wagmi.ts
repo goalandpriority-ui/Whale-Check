@@ -1,5 +1,3 @@
-'use client'
-
 import { createConfig, http } from 'wagmi'
 import { base } from 'wagmi/chains'
 import { walletConnect } from 'wagmi/connectors'
