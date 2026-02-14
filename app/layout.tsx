@@ -1,9 +1,8 @@
 import './globals.css'
-import { Providers } from './Providers'
 
 export const metadata = {
   title: 'Base Whale Engine',
-  description: 'Analyze Base wallets'
+  description: 'Analyze Base wallets',
 }
 
 export default function RootLayout({
@@ -14,9 +13,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        {children}
       </body>
     </html>
   )
