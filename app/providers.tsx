@@ -10,7 +10,7 @@ import { createConfig, http } from "wagmi";
 const config = createConfig(
   getDefaultConfig({
     appName: "Base Whale Engine",
-    projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
+    projectId: "YOUR_PROJECT_ID",
     chains: [base],
     transports: {
       [base.id]: http(),
