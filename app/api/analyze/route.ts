@@ -1,63 +1,64 @@
 import { NextResponse } from 'next/server'
-import { baseClient } from '@/lib/baseRpc'
+import { createPublicClient, http } from 'viem'
+import { base } from 'viem/chains'
+import { getTokenTransfers } from '@/lib/alchemy'
+
+const client = createPublicClient({
+  chain: base,
+  transport: http(process.env.ALCHEMY_URL),
+})
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const address = searchParams.get('address')
 
   if (!address) {
-    return NextResponse.json({ error: 'No address provided' })
+    return NextResponse.json({ error: "No address provided" })
   }
 
   try {
-    // 1️⃣ Get Transaction Count
+    // 1️⃣ Transaction Count
     const txCount = Number(
-      await baseClient.getTransactionCount({
+      await client.getTransactionCount({
         address: address as `0x${string}`,
       })
     )
 
-    // 2️⃣ Get ETH Balance
-    const balanceWei = await baseClient.getBalance({
+    // 2️⃣ ETH Balance
+    const balanceWei = await client.getBalance({
       address: address as `0x${string}`,
     })
 
     const balance = Number(balanceWei) / 1e18
 
-    // 3️⃣ Estimate Recent Volume (last 300 blocks)
-    const latestBlock = await baseClient.getBlockNumber()
-    let volume = 0
+    // 3️⃣ ERC20 Transfers
+    const transfers = await getTokenTransfers(address)
 
-    for (let i = 0; i < 300; i++) {
-      const block = await baseClient.getBlock({
-        blockNumber: latestBlock - BigInt(i),
-        includeTransactions: true,
-      })
+    let tokenVolumeUSD = 0
 
-      for (const tx of block.transactions) {
-        if (
-          tx.from?.toLowerCase() === address.toLowerCase() ||
-          tx.to?.toLowerCase() === address.toLowerCase()
-        ) {
-          volume += Number(tx.value) / 1e18
-        }
+    for (const tx of transfers) {
+      if (tx.value && tx.metadata?.price) {
+        tokenVolumeUSD += Number(tx.value) * Number(tx.metadata.price)
       }
     }
 
-    // 4️⃣ Classification
+    // 4️⃣ Classification Logic
     let type = "🐟 Shrimp"
-    if (txCount > 5000 || volume > 1000) type = "🐋 Whale"
-    else if (txCount > 1000 || volume > 100) type = "🐬 Dolphin"
+
+    if (tokenVolumeUSD > 500000 || txCount > 8000)
+      type = "🐋 Whale"
+    else if (tokenVolumeUSD > 50000 || txCount > 2000)
+      type = "🐬 Dolphin"
 
     return NextResponse.json({
       txCount,
       balance,
-      volume,
-      type,
+      tokenVolumeUSD,
+      type
     })
 
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: 'Failed to analyze wallet' })
+    return NextResponse.json({ error: "Whale analysis failed" })
   }
 }
