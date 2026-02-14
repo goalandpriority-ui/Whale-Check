@@ -1,5 +1,10 @@
 import './globals.css'
-import { Providers } from '../components/Providers'
+import { Providers } from './Providers'
+
+export const metadata = {
+  title: 'Base Whale Engine',
+  description: 'Analyze Base wallets'
+}
 
 export default function RootLayout({
   children,
