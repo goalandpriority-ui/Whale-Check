@@ -1,57 +1,38 @@
-"use client"
+"use client";
+import { useState } from "react";
 
-import { useState } from "react"
+export default function HomePage() {
+  const [wallet, setWallet] = useState("");
+  const [result, setResult] = useState<any>(null);
 
-export default function Home() {
-  const [address, setAddress] = useState("")
-  const [result, setResult] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-
-  const handleAnalyze = async () => {
-    setLoading(true)
-    setResult(null)
-
+  async function handleAnalyze() {
     const res = await fetch("/api/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address }),
-    })
-
-    const data = await res.json()
-    setResult(data)
-    setLoading(false)
+      body: JSON.stringify({ wallet }),
+    });
+    const data = await res.json();
+    setResult(data);
   }
 
   return (
-    <main style={{ padding: 40 }}>
-      <h1>🐋 Base Whale Engine (Outgoing Volume)</h1>
-
+    <main style={{ padding: 40, backgroundColor: "#000", minHeight: "100vh", color: "#fff" }}>
+      <h1>🐋 Base Whale Engine (ERC20 Trading Mode)</h1>
       <input
         type="text"
+        value={wallet}
+        onChange={(e) => setWallet(e.target.value)}
         placeholder="Enter wallet address"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        style={{ width: 400, padding: 10, marginTop: 20 }}
+        style={{ padding: 8, width: "300px", marginRight: 10 }}
       />
-
-      <br />
-
-      <button
-        onClick={handleAnalyze}
-        style={{ marginTop: 20, padding: 10 }}
-      >
-        Analyze Wallet
-      </button>
-
-      {loading && <p>Analyzing...</p>}
+      <button onClick={handleAnalyze} style={{ padding: 8 }}>Analyze Wallet</button>
 
       {result && (
-        <div style={{ marginTop: 30 }}>
-          <p>Total Transactions: {result.totalTx}</p>
-          <p>Total USD Volume: ${result.totalUSD}</p>
-          <h2>{result.category}</h2>
+        <div style={{ marginTop: 20 }}>
+          <p>Transactions: {result.txCount}</p>
+          <p>Total Volume: ${result.totalVolume}</p>
+          <p>Category: {result.category}</p>
         </div>
       )}
     </main>
-  )
+  );
 }
