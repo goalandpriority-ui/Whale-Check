@@ -1,21 +1,28 @@
 import { NextResponse } from "next/server"
 import { analyzeWallet } from "../../../lib/analyzeWallet"
+import { verifyPayment } from "../../../lib/verifyPayment"
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const address = searchParams.get("address")
+export async function POST(req: Request) {
+  const body = await req.json()
+  const { address, txHash } = body
 
-  if (!address) {
-    return NextResponse.json({ error: "Address required" }, { status: 400 })
-  }
-
-  try {
-    const result = await analyzeWallet(address)
-    return NextResponse.json(result)
-  } catch (error) {
+  if (!address || !txHash) {
     return NextResponse.json(
-      { error: "Failed to analyze wallet" },
-      { status: 500 }
+      { error: "Address and txHash required" },
+      { status: 400 }
     )
   }
+
+  const paid = await verifyPayment(address, txHash)
+
+  if (!paid) {
+    return NextResponse.json(
+      { error: "Payment not verified" },
+      { status: 403 }
+    )
+  }
+
+  const result = await analyzeWallet(address)
+
+  return NextResponse.json(result)
 }
