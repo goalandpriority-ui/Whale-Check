@@ -1,108 +1,57 @@
-'use client'
+"use client"
 
-import { useState } from "react";
-import { ethers } from "ethers";
+import { useState } from "react"
 
 export default function Home() {
-  const [address, setAddress] = useState("");
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState("")
+  const [result, setResult] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
 
-  const ALCHEMY_RPC = process.env.NEXT_PUBLIC_ALCHEMY_RPC!;
+  const handleAnalyze = async () => {
+    setLoading(true)
+    setResult(null)
 
-  async function analyzeWallet() {
-    try {
-      if (!address || !ethers.isAddress(address)) {
-        alert("Enter valid Base wallet address");
-        return;
-      }
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address }),
+    })
 
-      setLoading(true);
-      setResult(null);
-
-      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
-
-      // ✅ ETH Balance
-      const balance = await provider.getBalance(address);
-      const ethBalance = parseFloat(ethers.formatEther(balance));
-
-      const fromBlock = "0x1000000"; // limit block scan
-
-      // ✅ ERC20 Transfers (Better trading detection)
-      const erc20Transfers = await provider.send(
-        "alchemy_getAssetTransfers",
-        [
-          {
-            fromBlock,
-            toBlock: "latest",
-            fromAddress: address,
-            category: ["erc20"],
-          },
-        ]
-      );
-
-      let swapCount = 0;
-      let tradingVolume = 0;
-
-      erc20Transfers.transfers.forEach((tx: any) => {
-        swapCount++;
-
-        if (tx.value && tx.rawContract?.decimals) {
-          const decimals = parseInt(tx.rawContract.decimals);
-          const adjusted =
-            parseFloat(tx.value) / Math.pow(10, decimals);
-
-          tradingVolume += adjusted;
-        }
-      });
-
-      // ✅ Classification Logic
-      let classification = "🐟 Small Fish";
-
-      if (swapCount > 100) classification = "🐬 Active Trader";
-      if (swapCount > 500) classification = "🦈 Shark Trader";
-      if (swapCount > 1000) classification = "🐋 Whale Trader";
-
-      setResult({
-        ethBalance: ethBalance.toFixed(4),
-        swapCount,
-        tradingVolume: tradingVolume.toFixed(2),
-        classification,
-      });
-
-    } catch (error: any) {
-      console.error("FULL ERROR:", error);
-      alert("Error: " + (error?.message || "Unknown error"));
-    } finally {
-      setLoading(false);
-    }
+    const data = await res.json()
+    setResult(data)
+    setLoading(false)
   }
 
   return (
     <main style={{ padding: 40 }}>
-      <h1>🐋 Base Whale Engine (ERC20 Trading Mode)</h1>
+      <h1>🐋 Base Whale Engine (Outgoing Volume)</h1>
 
       <input
-        placeholder="Enter Base wallet address"
+        type="text"
+        placeholder="Enter wallet address"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
-        style={{ padding: 10, width: 400 }}
+        style={{ width: 400, padding: 10, marginTop: 20 }}
       />
 
-      <br /><br />
+      <br />
 
-      <button onClick={analyzeWallet} disabled={loading}>
-        {loading ? "Analyzing..." : "Analyze Wallet"}
+      <button
+        onClick={handleAnalyze}
+        style={{ marginTop: 20, padding: 10 }}
+      >
+        Analyze Wallet
       </button>
+
+      {loading && <p>Analyzing...</p>}
 
       {result && (
         <div style={{ marginTop: 30 }}>
-          <p>ETH Balance: {result.ethBalance} ETH</p>
-          <p>ERC20 Transfers: {result.swapCount}</p>
-          <p>Total Token Volume (adjusted): {result.tradingVolume}</p>
-          <h2>{result.classification}</h2>
+          <p>Total Transactions: {result.totalTx}</p>
+          <p>Total USD Volume: ${result.totalUSD}</p>
+          <h2>{result.category}</h2>
         </div>
       )}
     </main>
-  );
+  )
 }
