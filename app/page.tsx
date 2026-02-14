@@ -10,14 +10,17 @@ export default function Home() {
 
   const ALCHEMY_RPC = process.env.NEXT_PUBLIC_ALCHEMY_RPC!;
 
+  // 🔥 Base DEX Routers
+  const DEX_ROUTERS = [
+    "0x2626664c2603336E57B271c5C0b26F421741e481", // Uniswap V3 Router (Base)
+  ];
+
   async function analyzeWallet() {
     try {
       if (!address || !ethers.isAddress(address)) {
         alert("Enter valid Base wallet address");
         return;
       }
-
-      console.log("RPC:", ALCHEMY_RPC); // debug
 
       setLoading(true);
       setResult(null);
@@ -28,10 +31,10 @@ export default function Home() {
       const balance = await provider.getBalance(address);
       const ethBalance = parseFloat(ethers.formatEther(balance));
 
-      // Limit block range (IMPORTANT)
       const fromBlock = "0x1000000";
 
-      const ethTransfers = await provider.send("alchemy_getAssetTransfers", [
+      // 🔥 Get normal external transactions
+      const transfers = await provider.send("alchemy_getAssetTransfers", [
         {
           fromBlock,
           toBlock: "latest",
@@ -40,41 +43,30 @@ export default function Home() {
         },
       ]);
 
-      const erc20Transfers = await provider.send(
-        "alchemy_getAssetTransfers",
-        [
-          {
-            fromBlock,
-            toBlock: "latest",
-            fromAddress: address,
-            category: ["erc20"],
-          },
-        ]
-      );
+      let swapCount = 0;
+      let tradingVolume = 0;
 
-      const ethTxCount = ethTransfers.transfers.length;
-      const erc20TxCount = erc20Transfers.transfers.length;
+      transfers.transfers.forEach((tx: any) => {
+        if (tx.to && DEX_ROUTERS.includes(tx.to)) {
+          swapCount++;
 
-      let totalTokenVolume = 0;
-
-      erc20Transfers.transfers.forEach((tx: any) => {
-        if (tx.value) {
-          totalTokenVolume += parseFloat(tx.value);
+          if (tx.value) {
+            tradingVolume += parseFloat(tx.value);
+          }
         }
       });
 
+      // Classification logic
       let classification = "🐟 Small Fish";
-      const totalTx = ethTxCount + erc20TxCount;
 
-      if (totalTx > 500) classification = "🐬 Dolphin";
-      if (totalTx > 2000) classification = "🦈 Shark";
-      if (totalTx > 5000) classification = "🐋 Whale";
+      if (swapCount > 50) classification = "🐬 Active Trader";
+      if (swapCount > 200) classification = "🦈 Shark Trader";
+      if (swapCount > 500) classification = "🐋 Whale Trader";
 
       setResult({
         ethBalance: ethBalance.toFixed(4),
-        ethTxCount,
-        erc20TxCount,
-        totalTokenVolume: totalTokenVolume.toFixed(2),
+        swapCount,
+        tradingVolume: tradingVolume.toFixed(4),
         classification,
       });
 
@@ -88,7 +80,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: 40 }}>
-      <h1>🐋 Base Whale Engine</h1>
+      <h1>🐋 Base Whale Engine (Trading Mode)</h1>
 
       <input
         placeholder="Enter Base wallet address"
@@ -106,9 +98,8 @@ export default function Home() {
       {result && (
         <div style={{ marginTop: 30 }}>
           <p>ETH Balance: {result.ethBalance} ETH</p>
-          <p>ETH Transfers: {result.ethTxCount}</p>
-          <p>ERC20 Transfers: {result.erc20TxCount}</p>
-          <p>Total Token Volume: {result.totalTokenVolume}</p>
+          <p>DEX Swaps: {result.swapCount}</p>
+          <p>Trading Volume (ETH): {result.tradingVolume}</p>
           <h2>{result.classification}</h2>
         </div>
       )}
