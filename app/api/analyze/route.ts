@@ -1,28 +1,15 @@
-import { NextResponse } from "next/server"
-import { analyzeWallet } from "../../../lib/analyzeWallet"
-import { verifyPayment } from "../../../lib/verifyPayment"
+import { NextRequest, NextResponse } from "next/server";
+import { analyzeWallet } from "@/lib/analyzeWallet";
 
-export async function POST(req: Request) {
-  const body = await req.json()
-  const { address, txHash } = body
+export async function POST(req: NextRequest) {
+  const { wallet } = await req.json();
 
-  if (!address || !txHash) {
-    return NextResponse.json(
-      { error: "Address and txHash required" },
-      { status: 400 }
-    )
+  if (!wallet) return NextResponse.json({ error: "Wallet address required" }, { status: 400 });
+
+  try {
+    const result = await analyzeWallet(wallet);
+    return NextResponse.json(result);
+  } catch (err) {
+    return NextResponse.json({ error: "Failed to analyze wallet" }, { status: 500 });
   }
-
-  const paid = await verifyPayment(address, txHash)
-
-  if (!paid) {
-    return NextResponse.json(
-      { error: "Payment not verified" },
-      { status: 403 }
-    )
-  }
-
-  const result = await analyzeWallet(address)
-
-  return NextResponse.json(result)
 }
