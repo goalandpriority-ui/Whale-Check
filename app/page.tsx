@@ -1,16 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useAccount } from 'wagmi'
-
-export default function Home() {
-  const { address, isConnected } = useAccount()
-
-  const [loading, setLoading] = useState(false)
-  const [data, setData] = useState<{
-    txCount:"use client";
-
 import { useState } from "react";
 import { ethers } from "ethers";
 
@@ -20,10 +9,15 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const ALCHEMY_RPC =
-    "https://base-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY";
+    "https://base-mainnet.g.alchemy.com/v2/e9c7wDqC7HFFElN7KuQQP";
 
   async function analyzeWallet() {
     try {
+      if (!address) {
+        alert("Enter wallet address");
+        return;
+      }
+
       setLoading(true);
       setResult(null);
 
@@ -33,14 +27,13 @@ export default function Home() {
       const balance = await provider.getBalance(address);
       const ethBalance = parseFloat(ethers.formatEther(balance));
 
-      // Normal ETH Transfers
+      // ETH Transfers
       const ethTransfers = await provider.send("alchemy_getAssetTransfers", [
         {
           fromBlock: "0x0",
           toBlock: "latest",
           fromAddress: address,
           category: ["external"],
-          withMetadata: false,
         },
       ]);
 
@@ -53,7 +46,6 @@ export default function Home() {
             toBlock: "latest",
             fromAddress: address,
             category: ["erc20"],
-            withMetadata: false,
           },
         ]
       );
@@ -69,22 +61,24 @@ export default function Home() {
         }
       });
 
-      // Simple Classification Logic
+      // Classification
       let classification = "🐟 Small Fish";
-      if (ethTxCount + erc20TxCount > 500) classification = "🐬 Dolphin";
-      if (ethTxCount + erc20TxCount > 2000) classification = "🦈 Shark";
-      if (ethTxCount + erc20TxCount > 5000) classification = "🐋 Whale";
+      const totalTx = ethTxCount + erc20TxCount;
+
+      if (totalTx > 500) classification = "🐬 Dolphin";
+      if (totalTx > 2000) classification = "🦈 Shark";
+      if (totalTx > 5000) classification = "🐋 Whale";
 
       setResult({
-        ethBalance,
+        ethBalance: ethBalance.toFixed(4),
         ethTxCount,
         erc20TxCount,
         totalTokenVolume: totalTokenVolume.toFixed(2),
         classification,
       });
-    } catch (err) {
-      console.error(err);
-      alert("Error analyzing wallet");
+    } catch (error) {
+      console.error(error);
+      alert("Whale analysis failed");
     } finally {
       setLoading(false);
     }
@@ -110,8 +104,7 @@ export default function Home() {
 
       {result && (
         <div style={{ marginTop: 30 }}>
-          <h3>Results:</h3>
-          <p>ETH Balance: {result.ethBalance}</p>
+          <p>ETH Balance: {result.ethBalance} ETH</p>
           <p>ETH Transfers: {result.ethTxCount}</p>
           <p>ERC20 Transfers: {result.erc20TxCount}</p>
           <p>Total Token Volume: {result.totalTokenVolume}</p>
@@ -120,4 +113,4 @@ export default function Home() {
       )}
     </main>
   );
-    }
+}
