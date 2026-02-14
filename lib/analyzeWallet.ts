@@ -1,108 +1,66 @@
-'use client'
+import { Alchemy, Network } from "alchemy-sdk"
 
-import { useState } from "react";
-import { ethers } from "ethers";
+const alchemy = new Alchemy({
+  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
+  network: Network.BASE_MAINNET,
+})
 
-export default function Home() {
-  const [address, setAddress] = useState("");
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+function getCategory(totalTx: number, totalVolume: number) {
+  if (totalTx >= 5000 && totalVolume >= 5000) return "🐳 Big Whale"
+  if (totalTx >= 3000 && totalVolume >= 3000) return "🐋 Whale"
+  if (totalTx >= 1000 && totalVolume >= 1000) return "🐬 Dolphin"
+  if (totalTx >= 500 && totalVolume >= 500) return "🦐 Shrimp"
+  return "🦐 Shrimp"
+}
 
-  const ALCHEMY_RPC = process.env.NEXT_PUBLIC_ALCHEMY_RPC!;
+async function getEthPrice() {
+  const res = await fetch(
+    "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+  )
+  const data = await res.json()
+  return data.ethereum.usd || 0
+}
 
-  async function analyzeWallet() {
-    try {
-      if (!address || !ethers.isAddress(address)) {
-        alert("Enter valid Base wallet address");
-        return;
-      }
+async function getTokenPrice(contractAddress: string) {
+  const res = await fetch(
+    `https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=${contractAddress}&vs_currencies=usd`
+  )
+  const data = await res.json()
+  return data[contractAddress.toLowerCase()]?.usd || 0
+}
 
-      setLoading(true);
-      setResult(null);
+export async function analyzeWallet(address: string) {
+  const transfers = await alchemy.core.getAssetTransfers({
+    fromBlock: "0x0",
+    toBlock: "latest",
+    fromAddress: address,
+    category: ["external", "erc20"],
+  })
 
-      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
+  const txList = transfers.transfers
+  const totalTx = txList.length
 
-      // ✅ ETH Balance
-      const balance = await provider.getBalance(address);
-      const ethBalance = parseFloat(ethers.formatEther(balance));
+  let totalUSD = 0
+  const ethPrice = await getEthPrice()
 
-      const fromBlock = "0x1000000"; // limit block scan
+  for (const tx of txList) {
+    if (tx.category === "external" && tx.value) {
+      totalUSD += Number(tx.value) * ethPrice
+    }
 
-      // ✅ ERC20 Transfers (Better trading detection)
-      const erc20Transfers = await provider.send(
-        "alchemy_getAssetTransfers",
-        [
-          {
-            fromBlock,
-            toBlock: "latest",
-            fromAddress: address,
-            category: ["erc20"],
-          },
-        ]
-      );
+    if (tx.category === "erc20" && tx.rawContract?.decimal && tx.value) {
+      const decimals = Number(tx.rawContract.decimal)
+      const adjusted =
+        Number(BigInt(tx.value)) / 10 ** decimals
 
-      let swapCount = 0;
-      let tradingVolume = 0;
-
-      erc20Transfers.transfers.forEach((tx: any) => {
-        swapCount++;
-
-        if (tx.value && tx.rawContract?.decimals) {
-          const decimals = parseInt(tx.rawContract.decimals);
-          const adjusted =
-            parseFloat(tx.value) / Math.pow(10, decimals);
-
-          tradingVolume += adjusted;
-        }
-      });
-
-      // ✅ Classification Logic
-      let classification = "🐟 Small Fish";
-
-      if (swapCount > 100) classification = "🐬 Active Trader";
-      if (swapCount > 500) classification = "🦈 Shark Trader";
-      if (swapCount > 1000) classification = "🐋 Whale Trader";
-
-      setResult({
-        ethBalance: ethBalance.toFixed(4),
-        swapCount,
-        tradingVolume: tradingVolume.toFixed(2),
-        classification,
-      });
-
-    } catch (error: any) {
-      console.error("FULL ERROR:", error);
-      alert("Error: " + (error?.message || "Unknown error"));
-    } finally {
-      setLoading(false);
+      const price = await getTokenPrice(tx.rawContract.address)
+      totalUSD += adjusted * price
     }
   }
 
-  return (
-    <main style={{ padding: 40 }}>
-      <h1>🐋 Base Whale Engine (ERC20 Trading Mode)</h1>
-
-      <input
-        placeholder="Enter Base wallet address"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        style={{ padding: 10, width: 400 }}
-      />
-
-      <br /><br />
-
-      <button onClick={analyzeWallet} disabled={loading}>
-        {loading ? "Analyzing..." : "Analyze Wallet"}
-      </button>
-
-      {result && (
-        <div style={{ marginTop: 30 }}>
-          <p>ETH Balance: {result.ethBalance} ETH</p>
-          <p>ERC20 Transfers: {result.swapCount}</p>
-          <p>Total Token Volume (adjusted): {result.tradingVolume}</p>
-          <h2>{result.classification}</h2>
-        </div>
-      )}
-    </main>
-  );
-    }
+  return {
+    totalTx,
+    totalUSD: Number(totalUSD.toFixed(2)),
+    category: getCategory(totalTx, totalUSD),
+  }
+}
