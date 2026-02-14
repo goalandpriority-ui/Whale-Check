@@ -3,7 +3,6 @@ import { analyzeWallet } from "@/lib/analyzeWallet";
 
 export async function POST(req: NextRequest) {
   const { wallet } = await req.json();
-
   if (!wallet) return NextResponse.json({ error: "Wallet address required" }, { status: 400 });
 
   try {
