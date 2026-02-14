@@ -8,56 +8,101 @@ export default function Home() {
   const { address, isConnected } = useAccount()
 
   const [loading, setLoading] = useState(false)
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<{
+    txCount: number
+    balance: number
+    tokenVolumeUSD: number
+    type: string
+  } | null>(null)
 
   const analyzeWallet = async () => {
     if (!address) return
+
     setLoading(true)
+    setData(null)
 
     try {
       const res = await fetch(`/api/analyze?address=${address}`)
       const result = await res.json()
-      setData(result)
+
+      if (result.error) {
+        alert(result.error)
+      } else {
+        setData(result)
+      }
     } catch (err) {
       console.error(err)
+      alert("Failed to analyze wallet")
     }
 
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6 p-6">
-      <h1 className="text-4xl font-bold text-center">
-        Base Whale Checker 🐋
-      </h1>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
 
-      <p className="text-gray-400 text-center">
-        Connect your wallet to analyze Base chain activity
-      </p>
+      <div className="max-w-xl w-full text-center space-y-6">
 
-      <ConnectButton />
+        <h1 className="text-4xl font-bold">
+          Base Whale Checker 🐋
+        </h1>
 
-      {isConnected && (
-        <>
-          <button
-            onClick={analyzeWallet}
-            className="bg-blue-600 px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            Analyze Wallet
-          </button>
+        <p className="text-gray-400">
+          Connect your wallet to analyze Base chain trading activity
+        </p>
 
-          {loading && <p>Scanning blockchain...</p>}
+        <div className="flex justify-center">
+          <ConnectButton />
+        </div>
 
-          {data && !loading && (
-            <div className="text-center mt-4 space-y-2">
-              <p>Total Transactions: {data.txCount}</p>
-              <p>Current ETH Balance: {data.balance.toFixed(4)} ETH</p>
-              <p>Recent Volume (last 300 blocks): {data.volume.toFixed(4)} ETH</p>
-              <p className="text-2xl font-bold mt-2">{data.type}</p>
-            </div>
-          )}
-        </>
-      )}
+        {isConnected && (
+          <>
+            <button
+              onClick={analyzeWallet}
+              className="bg-blue-600 hover:bg-blue-700 transition px-6 py-3 rounded-lg font-semibold"
+            >
+              Analyze Wallet
+            </button>
+
+            {loading && (
+              <p className="text-gray-400 mt-4">
+                🔎 Scanning blockchain...
+              </p>
+            )}
+
+            {data && !loading && (
+              <div className="bg-zinc-900 rounded-xl p-6 mt-6 space-y-3 text-left">
+
+                <div className="flex justify-between">
+                  <span>Total Transactions</span>
+                  <span>{data.txCount.toLocaleString()}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>ETH Balance</span>
+                  <span>{data.balance.toFixed(4)} ETH</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Total Token Volume</span>
+                  <span>
+                    ${data.tokenVolumeUSD.toLocaleString(undefined, {
+                      maximumFractionDigits: 2
+                    })}
+                  </span>
+                </div>
+
+                <div className="border-t border-zinc-700 pt-4 text-center text-2xl font-bold">
+                  {data.type}
+                </div>
+
+              </div>
+            )}
+          </>
+        )}
+
+      </div>
+
     </div>
   )
 }
