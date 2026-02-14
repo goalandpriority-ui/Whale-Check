@@ -9,100 +9,115 @@ export default function Home() {
 
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<{
-    txCount: number
-    balance: number
-    tokenVolumeUSD: number
-    type: string
-  } | null>(null)
+    txCount:"use client";
 
-  const analyzeWallet = async () => {
-    if (!address) return
+import { useState } from "react";
+import { ethers } from "ethers";
 
-    setLoading(true)
-    setData(null)
+export default function Home() {
+  const [address, setAddress] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
+  const ALCHEMY_RPC =
+    "https://base-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY";
+
+  async function analyzeWallet() {
     try {
-      const res = await fetch(`/api/analyze?address=${address}`)
-      const result = await res.json()
+      setLoading(true);
+      setResult(null);
 
-      if (result.error) {
-        alert(result.error)
-      } else {
-        setData(result)
-      }
+      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
+
+      // ETH Balance
+      const balance = await provider.getBalance(address);
+      const ethBalance = parseFloat(ethers.formatEther(balance));
+
+      // Normal ETH Transfers
+      const ethTransfers = await provider.send("alchemy_getAssetTransfers", [
+        {
+          fromBlock: "0x0",
+          toBlock: "latest",
+          fromAddress: address,
+          category: ["external"],
+          withMetadata: false,
+        },
+      ]);
+
+      // ERC20 Transfers
+      const erc20Transfers = await provider.send(
+        "alchemy_getAssetTransfers",
+        [
+          {
+            fromBlock: "0x0",
+            toBlock: "latest",
+            fromAddress: address,
+            category: ["erc20"],
+            withMetadata: false,
+          },
+        ]
+      );
+
+      const ethTxCount = ethTransfers.transfers.length;
+      const erc20TxCount = erc20Transfers.transfers.length;
+
+      let totalTokenVolume = 0;
+
+      erc20Transfers.transfers.forEach((tx: any) => {
+        if (tx.value) {
+          totalTokenVolume += parseFloat(tx.value);
+        }
+      });
+
+      // Simple Classification Logic
+      let classification = "🐟 Small Fish";
+      if (ethTxCount + erc20TxCount > 500) classification = "🐬 Dolphin";
+      if (ethTxCount + erc20TxCount > 2000) classification = "🦈 Shark";
+      if (ethTxCount + erc20TxCount > 5000) classification = "🐋 Whale";
+
+      setResult({
+        ethBalance,
+        ethTxCount,
+        erc20TxCount,
+        totalTokenVolume: totalTokenVolume.toFixed(2),
+        classification,
+      });
     } catch (err) {
-      console.error(err)
-      alert("Failed to analyze wallet")
+      console.error(err);
+      alert("Error analyzing wallet");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-12">
+    <main style={{ padding: 40 }}>
+      <h1>🐋 Base Whale Engine</h1>
 
-      <div className="max-w-xl w-full text-center space-y-6">
+      <input
+        placeholder="Enter Base wallet address"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        style={{ padding: 10, width: 400 }}
+      />
 
-        <h1 className="text-4xl font-bold">
-          Base Whale Checker 🐋
-        </h1>
+      <br />
+      <br />
 
-        <p className="text-gray-400">
-          Connect your wallet to analyze Base chain trading activity
-        </p>
+      <button onClick={analyzeWallet} disabled={loading}>
+        {loading ? "Analyzing..." : "Analyze Wallet"}
+      </button>
 
-        <div className="flex justify-center">
-          <ConnectButton />
+      {result && (
+        <div style={{ marginTop: 30 }}>
+          <h3>Results:</h3>
+          <p>ETH Balance: {result.ethBalance}</p>
+          <p>ETH Transfers: {result.ethTxCount}</p>
+          <p>ERC20 Transfers: {result.erc20TxCount}</p>
+          <p>Total Token Volume: {result.totalTokenVolume}</p>
+          <h2>{result.classification}</h2>
         </div>
-
-        {isConnected && (
-          <>
-            <button
-              onClick={analyzeWallet}
-              className="bg-blue-600 hover:bg-blue-700 transition px-6 py-3 rounded-lg font-semibold"
-            >
-              Analyze Wallet
-            </button>
-
-            {loading && (
-              <p className="text-gray-400 mt-4">
-                🔎 Scanning blockchain...
-              </p>
-            )}
-
-            {data && !loading && (
-              <div className="bg-zinc-900 rounded-xl p-6 mt-6 space-y-3 text-left">
-
-                <div className="flex justify-between">
-                  <span>Total Transactions</span>
-                  <span>{data.txCount.toLocaleString()}</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>ETH Balance</span>
-                  <span>{data.balance.toFixed(4)} ETH</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Total Token Volume</span>
-                  <span>
-                    ${data.tokenVolumeUSD.toLocaleString(undefined, {
-                      maximumFractionDigits: 2
-                    })}
-                  </span>
-                </div>
-
-                <div className="border-t border-zinc-700 pt-4 text-center text-2xl font-bold">
-                  {data.type}
-                </div>
-
-              </div>
-            )}
-          </>
-        )}
-
-      </div>
-
-    </div>
-  )
-}
+      )}
+    </main>
+  );
+    }
