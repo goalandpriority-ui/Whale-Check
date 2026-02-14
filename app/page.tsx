@@ -17,6 +17,8 @@ export default function Home() {
         return;
       }
 
+      console.log("RPC:", ALCHEMY_RPC); // debug
+
       setLoading(true);
       setResult(null);
 
@@ -26,63 +28,41 @@ export default function Home() {
       const balance = await provider.getBalance(address);
       const ethBalance = parseFloat(ethers.formatEther(balance));
 
-      // ETH Transfers (sent + received)
-      const [sentEth, receivedEth] = await Promise.all([
-        provider.send("alchemy_getAssetTransfers", [
-          {
-            fromBlock: "0x0",
-            toBlock: "latest",
-            fromAddress: address,
-            category: ["external"],
-          },
-        ]),
-        provider.send("alchemy_getAssetTransfers", [
-          {
-            fromBlock: "0x0",
-            toBlock: "latest",
-            toAddress: address,
-            category: ["external"],
-          },
-        ]),
+      // Limit block range (IMPORTANT)
+      const fromBlock = "0x1000000";
+
+      const ethTransfers = await provider.send("alchemy_getAssetTransfers", [
+        {
+          fromBlock,
+          toBlock: "latest",
+          fromAddress: address,
+          category: ["external"],
+        },
       ]);
 
-      // ERC20 Transfers (sent + received)
-      const [sentErc20, receivedErc20] = await Promise.all([
-        provider.send("alchemy_getAssetTransfers", [
+      const erc20Transfers = await provider.send(
+        "alchemy_getAssetTransfers",
+        [
           {
-            fromBlock: "0x0",
+            fromBlock,
             toBlock: "latest",
             fromAddress: address,
             category: ["erc20"],
           },
-        ]),
-        provider.send("alchemy_getAssetTransfers", [
-          {
-            fromBlock: "0x0",
-            toBlock: "latest",
-            toAddress: address,
-            category: ["erc20"],
-          },
-        ]),
-      ]);
+        ]
+      );
 
-      const ethTxCount =
-        sentEth.transfers.length + receivedEth.transfers.length;
-
-      const erc20TxCount =
-        sentErc20.transfers.length + receivedErc20.transfers.length;
+      const ethTxCount = ethTransfers.transfers.length;
+      const erc20TxCount = erc20Transfers.transfers.length;
 
       let totalTokenVolume = 0;
 
-      [...sentErc20.transfers, ...receivedErc20.transfers].forEach(
-        (tx: any) => {
-          if (tx.value) {
-            totalTokenVolume += parseFloat(tx.value);
-          }
+      erc20Transfers.transfers.forEach((tx: any) => {
+        if (tx.value) {
+          totalTokenVolume += parseFloat(tx.value);
         }
-      );
+      });
 
-      // Classification logic
       let classification = "🐟 Small Fish";
       const totalTx = ethTxCount + erc20TxCount;
 
@@ -97,9 +77,10 @@ export default function Home() {
         totalTokenVolume: totalTokenVolume.toFixed(2),
         classification,
       });
-    } catch (error) {
-      console.error(error);
-      alert("Whale analysis failed");
+
+    } catch (error: any) {
+      console.error("FULL ERROR:", error);
+      alert("Error: " + (error?.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
