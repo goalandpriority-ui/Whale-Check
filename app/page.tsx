@@ -8,13 +8,12 @@ export default function Home() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const ALCHEMY_RPC =
-    "https://base-mainnet.g.alchemy.com/v2/e9c7wDqC7HFFElN7KuQQP";
+  const ALCHEMY_RPC = process.env.NEXT_PUBLIC_ALCHEMY_RPC!;
 
   async function analyzeWallet() {
     try {
-      if (!address) {
-        alert("Enter wallet address");
+      if (!address || !ethers.isAddress(address)) {
+        alert("Enter valid Base wallet address");
         return;
       }
 
@@ -27,41 +26,63 @@ export default function Home() {
       const balance = await provider.getBalance(address);
       const ethBalance = parseFloat(ethers.formatEther(balance));
 
-      // ETH Transfers
-      const ethTransfers = await provider.send("alchemy_getAssetTransfers", [
-        {
-          fromBlock: "0x0",
-          toBlock: "latest",
-          fromAddress: address,
-          category: ["external"],
-        },
+      // ETH Transfers (sent + received)
+      const [sentEth, receivedEth] = await Promise.all([
+        provider.send("alchemy_getAssetTransfers", [
+          {
+            fromBlock: "0x0",
+            toBlock: "latest",
+            fromAddress: address,
+            category: ["external"],
+          },
+        ]),
+        provider.send("alchemy_getAssetTransfers", [
+          {
+            fromBlock: "0x0",
+            toBlock: "latest",
+            toAddress: address,
+            category: ["external"],
+          },
+        ]),
       ]);
 
-      // ERC20 Transfers
-      const erc20Transfers = await provider.send(
-        "alchemy_getAssetTransfers",
-        [
+      // ERC20 Transfers (sent + received)
+      const [sentErc20, receivedErc20] = await Promise.all([
+        provider.send("alchemy_getAssetTransfers", [
           {
             fromBlock: "0x0",
             toBlock: "latest",
             fromAddress: address,
             category: ["erc20"],
           },
-        ]
-      );
+        ]),
+        provider.send("alchemy_getAssetTransfers", [
+          {
+            fromBlock: "0x0",
+            toBlock: "latest",
+            toAddress: address,
+            category: ["erc20"],
+          },
+        ]),
+      ]);
 
-      const ethTxCount = ethTransfers.transfers.length;
-      const erc20TxCount = erc20Transfers.transfers.length;
+      const ethTxCount =
+        sentEth.transfers.length + receivedEth.transfers.length;
+
+      const erc20TxCount =
+        sentErc20.transfers.length + receivedErc20.transfers.length;
 
       let totalTokenVolume = 0;
 
-      erc20Transfers.transfers.forEach((tx: any) => {
-        if (tx.value) {
-          totalTokenVolume += parseFloat(tx.value);
+      [...sentErc20.transfers, ...receivedErc20.transfers].forEach(
+        (tx: any) => {
+          if (tx.value) {
+            totalTokenVolume += parseFloat(tx.value);
+          }
         }
-      });
+      );
 
-      // Classification
+      // Classification logic
       let classification = "🐟 Small Fish";
       const totalTx = ethTxCount + erc20TxCount;
 
@@ -95,8 +116,7 @@ export default function Home() {
         style={{ padding: 10, width: 400 }}
       />
 
-      <br />
-      <br />
+      <br /><br />
 
       <button onClick={analyzeWallet} disabled={loading}>
         {loading ? "Analyzing..." : "Analyze Wallet"}
