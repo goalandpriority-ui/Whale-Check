@@ -1,22 +1,23 @@
-import { ethers } from "ethers"
+import { ethers } from "ethers";
+import { alchemy } from "./alchemy";
 
-const RPC_URL = process.env.NEXT_PUBLIC_ALCHEMY_RPC!
+export type WalletCategory = "Shrimp" | "Dolphin" | "Whale" | "Big Whale";
 
 export async function analyzeWallet(address: string) {
-  const provider = new ethers.JsonRpcProvider(RPC_URL)
+  const history = await alchemy.nft.getNftsForOwner(address); // Example: fetch NFTs (or ERC20 txs)
+  
+  // Placeholder logic: replace with real outgoing volume calculation
+  let totalVolume = 0; 
+  let txCount = 0;
 
-  const balance = await provider.getBalance(address)
-  const balanceInEth = Number(ethers.formatEther(balance))
+  // TODO: Calculate txCount & totalVolume from ERC20 transfers
+  // Use Alchemy SDK ERC20 methods
 
-  let category = "Shrimp 🦐"
+  // Category logic
+  let category: WalletCategory = "Shrimp";
+  if (totalVolume >= 5000) category = "Big Whale";
+  else if (totalVolume >= 3000) category = "Whale";
+  else if (totalVolume >= 1000) category = "Dolphin";
 
-  if (balanceInEth > 1) category = "Dolphin 🐬"
-  if (balanceInEth > 5) category = "Whale 🐳"
-  if (balanceInEth > 20) category = "Big Whale 🐋🔥"
-
-  return {
-    address,
-    balance: balanceInEth,
-    category,
-  }
+  return { txCount, totalVolume, category };
 }
