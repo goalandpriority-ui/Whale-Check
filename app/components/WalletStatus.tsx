@@ -4,7 +4,7 @@ import { useAccount, useConnect, useDisconnect } from "wagmi"
 
 export default function WalletStatus() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
+  const { connectAsync, connectors } = useConnect()
   const { disconnect } = useDisconnect()
 
   if (isConnected) {
@@ -22,8 +22,14 @@ export default function WalletStatus() {
     <div>
       {connectors.map((connector) => (
         <button
-          key={connector.id}   {/* 🔥 uid → id change panniruken */}
-          onClick={() => connect({ connector })}
+          key={connector.id}
+          onClick={async () => {
+            try {
+              await connectAsync({ connector })
+            } catch (error) {
+              console.error(error)
+            }
+          }}
         >
           Connect {connector.name}
         </button>
