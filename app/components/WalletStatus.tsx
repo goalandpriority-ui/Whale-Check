@@ -1,6 +1,6 @@
-'use client'
+"use client"
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect } from "wagmi"
 
 export default function WalletStatus() {
   const { address, isConnected } = useAccount()
@@ -11,7 +11,9 @@ export default function WalletStatus() {
     return (
       <div>
         <p>Connected: {address}</p>
-        <button onClick={() => disconnect()}>Disconnect</button>
+        <button onClick={() => disconnect()}>
+          Disconnect
+        </button>
       </div>
     )
   }
@@ -20,10 +22,10 @@ export default function WalletStatus() {
     <div>
       {connectors.map((connector) => (
         <button
-          key={connector.uid}
+          key={connector.id}   {/* 🔥 uid → id change panniruken */}
           onClick={() => connect({ connector })}
         >
-          Connect Wallet
+          Connect {connector.name}
         </button>
       ))}
     </div>
