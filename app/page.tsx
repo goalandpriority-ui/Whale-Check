@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network } from "alchemy-sdk"
+import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_RPC?.split("/v2/")[1],
@@ -10,108 +10,85 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
-// ✅ Base Uniswap V3 Router
-const UNISWAP_V3_ROUTER = "0x2626664c2603336E57B271c5C0b26F421741e481".toLowerCase()
+const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".toLowerCase()
 
 export default function Home() {
   const [address, setAddress] = useState("")
   const [txCount, setTxCount] = useState(0)
-  const [uniTrades, setUniTrades] = useState(0)
+  const [volumeUSD, setVolumeUSD] = useState(0)
   const [category, setCategory] = useState("Shrimp 🦐")
   const [loading, setLoading] = useState(false)
 
-  const analyzeWallet = async () => {
+  const checkWhale = async () => {
     if (!address) return
     setLoading(true)
 
     try {
-      const cleanAddress = address.trim()
-
-      // ✅ 1️⃣ Get Real Transaction Count (Nonce)
-      const totalTx = await alchemy.core.getTransactionCount(cleanAddress)
-      setTxCount(totalTx)
-
-      // ✅ 2️⃣ Fetch recent transactions (safe limit)
-      const history = await alchemy.core.getAssetTransfers({
+      const transfers = await alchemy.core.getAssetTransfers({
         fromBlock: "0x0",
         toBlock: "latest",
-        fromAddress: cleanAddress,
-        category: ["external"],
-        maxCount: 1000,
+        fromAddress: address,
+        category: [
+          AssetTransfersCategory.EXTERNAL,
+          AssetTransfersCategory.ERC20
+        ],
+        withMetadata: true,
+        maxCount: 1000
       })
 
-      let uniswapCount = 0
+      const txs = transfers.transfers
+      setTxCount(txs.length)
 
-      for (const tx of history.transfers as any[]) {
-        if (tx.to && tx.to.toLowerCase() === UNISWAP_V3_ROUTER) {
-          uniswapCount++
+      let totalUSD = 0
+      let totalEth = 0
+
+      for (const tx of txs as any[]) {
+
+        // 1️⃣ ETH transfers
+        if (tx.category === "external" && tx.value) {
+          totalEth += Number(tx.value)
+        }
+
+        // 2️⃣ ERC20 transfers
+        if (tx.category === "erc20") {
+          const tokenAddress = tx.rawContract?.address?.toLowerCase()
+          const tokenDecimals = Number(tx.rawContract?.decimals || 18)
+          const rawValue = Number(tx.rawContract?.value || 0)
+          const tokenAmount = rawValue / Math.pow(10, tokenDecimals)
+
+          if (tokenAddress === BASE_USDC) totalUSD += tokenAmount
         }
       }
 
-      setUniTrades(uniswapCount)
+      // ETH to USD
+      const priceRes = await fetch(
+        "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+      )
+      const priceData = await priceRes.json()
+      const ethPrice = priceData.ethereum.usd
 
-      // ✅ 3️⃣ Category Logic (Simple + Clean)
-      let userCategory = "Shrimp 🦐"
+      totalUSD += totalEth * ethPrice
+      setVolumeUSD(totalUSD)
 
-      if (uniswapCount > 500) {
-        userCategory = "Whale 🐋"
-      } else if (uniswapCount > 200) {
-        userCategory = "Shark 🦈"
-      } else if (uniswapCount > 50) {
-        userCategory = "Dolphin 🐬"
-      }
-
-      setCategory(userCategory)
+      // 🐋 Category
+      if (txs.length > 500 && totalUSD > 100000) setCategory("Whale 🐋")
+      else if (txs.length > 200 || totalUSD > 10000) setCategory("Shark 🦈")
+      else if (txs.length > 50 || totalUSD > 1000) setCategory("Dolphin 🐬")
+      else setCategory("Shrimp 🦐")
 
     } catch (err) {
       console.error(err)
-      alert("Error analyzing wallet")
     }
 
     setLoading(false)
   }
 
-  // ✅ Share Text
-  const shareText = `🐋 I am classified as "${category}" on Base Whale Engine!
-
-🔹 Total Transactions: ${txCount}
-🦄 Uniswap Trades: ${uniTrades}
-
-Analyze your wallet now 👇`
-
-  const shareTwitter = () => {
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-      shareText
-    )}`
-    window.open(twitterUrl, "_blank")
-  }
-
-  const shareFarcaster = () => {
-    const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(
-      shareText
-    )}`
-    window.open(farcasterUrl, "_blank")
-  }
-
   return (
-    <main
-      style={{
-        padding: "40px",
-        background: "black",
-        minHeight: "100vh",
-        color: "white",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <h1>🐋 Base Whale Engine</h1>
+    <main style={{ padding: "40px", background: "black", minHeight: "100vh", color: "white" }}>
+      <h1>🐋 Base Whale Engine (Smart Volume Mode)</h1>
 
       <input
-        style={{
-          padding: "10px",
-          width: "400px",
-          marginTop: "20px",
-          borderRadius: "8px",
-        }}
+        style={{ padding: "10px", width: "400px", marginTop: "20px" }}
         placeholder="Paste wallet address"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
@@ -120,51 +97,19 @@ Analyze your wallet now 👇`
       <br />
 
       <button
-        onClick={analyzeWallet}
-        style={{
-          marginTop: "20px",
-          padding: "10px 20px",
-          borderRadius: "8px",
-          cursor: "pointer",
-        }}
+        onClick={checkWhale}
+        style={{ marginTop: "20px", padding: "10px 20px" }}
       >
         {loading ? "Analyzing..." : "Analyze Wallet"}
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Wallet Intelligence</h2>
-        <p><strong>Address:</strong> {address}</p>
-        <p><strong>Total Transactions:</strong> {txCount}</p>
-        <p><strong>Uniswap Trades:</strong> {uniTrades}</p>
-        <p><strong>Category:</strong> {category}</p>
+        <h2>📊 Full Base Smart Activity</h2>
+        <p>Address: {address}</p>
+        <p>Total Transactions: {txCount}</p>
+        <p>Estimated Total Volume (USD): ${volumeUSD.toFixed(2)}</p>
+        <p>Category: {category}</p>
       </div>
-
-      {txCount > 0 && (
-        <div style={{ marginTop: "30px" }}>
-          <button
-            onClick={shareTwitter}
-            style={{
-              marginRight: "15px",
-              padding: "10px 20px",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-          >
-            Share on Twitter
-          </button>
-
-          <button
-            onClick={shareFarcaster}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-          >
-            Share on Farcaster
-          </button>
-        </div>
-      )}
     </main>
   )
-}
+        }
