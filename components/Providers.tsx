@@ -6,17 +6,31 @@ import { base } from "wagmi/chains"
 import { injected } from "wagmi/connectors"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
+const rpcUrl = process.env.NEXT_PUBLIC_ALCHEMY_RPC
+
+if (!rpcUrl) {
+  throw new Error("NEXT_PUBLIC_ALCHEMY_RPC is missing in .env.local")
+}
+
 const config = createConfig({
   chains: [base],
   transports: {
-    [base.id]: http(process.env.NEXT_PUBLIC_ALCHEMY_RPC!)
+    [base.id]: http(rpcUrl),
   },
-  connectors: [injected()]
+  connectors: [
+    injected({
+      shimDisconnect: true,
+    }),
+  ],
 })
 
 const queryClient = new QueryClient()
 
-export default function Providers({ children }: { children: ReactNode }) {
+export default function Providers({
+  children,
+}: {
+  children: ReactNode
+}) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
