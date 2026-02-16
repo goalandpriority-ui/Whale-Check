@@ -1,26 +1,29 @@
-'use client'
+"use client"
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { ReactNode } from "react"
+import { WagmiConfig, configureChains, createConfig } from "wagmi"
+import { mainnet } from "wagmi/chains"
+import { publicProvider } from "wagmi/providers/public"
+import { InjectedConnector } from "@wagmi/connectors/injected"
 
-export default function WalletStatus() {
-  const { address, isConnected } = useAccount()
-  const { connect, connectors } = useConnect()
-  const { disconnect } = useDisconnect()
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [mainnet],
+  [publicProvider()]
+)
 
-  if (isConnected) {
-    return (
-      <div>
-        <p>Connected: {address}</p>
-        <button onClick={() => disconnect()}>
-          Disconnect
-        </button>
-      </div>
-    )
-  }
+const config = createConfig({
+  autoConnect: true,
+  connectors: [
+    new InjectedConnector({ chains }),
+  ],
+  publicClient,
+  webSocketPublicClient,
+})
 
+export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <button onClick={() => connect({ connector: connectors[0] })}>
-      Connect Wallet
-    </button>
+    <WagmiConfig config={config}>
+      {children}
+    </WagmiConfig>
   )
 }
