@@ -3,8 +3,8 @@
 import { ReactNode } from "react"
 import { WagmiConfig, createConfig, http } from "wagmi"
 import { base } from "wagmi/chains"
-import { InjectedConnector } from "wagmi/connectors/injected"
-import { WalletConnectConnector } from "wagmi/connectors/walletConnect"
+import { InjectedConnector } from "@wagmi/core/connectors/injected"
+import { WalletConnectConnector } from "@wagmi/core/connectors/walletConnect"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const config = createConfig({
