@@ -12,8 +12,8 @@ const config = createConfig({
   connectors: [
     new InjectedConnector(),
     new WalletConnectConnector({
-      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
       chains: [base],
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
     }),
   ],
   publicClient: http(base.rpcUrls.default),
