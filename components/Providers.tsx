@@ -1,24 +1,27 @@
 "use client"
 
 import { ReactNode } from "react"
-import { WagmiConfig, createConfig, http } from "wagmi"
-import { mainnet } from "wagmi/chains"
+import { WagmiProvider, createConfig, http } from "wagmi"
+import { base } from "wagmi/chains"
 import { injected } from "wagmi/connectors"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const config = createConfig({
-  chains: [mainnet],
-  connectors: [
-    injected()
-  ],
+  chains: [base],
   transports: {
-    [mainnet.id]: http()
-  }
+    [base.id]: http(process.env.NEXT_PUBLIC_ALCHEMY_RPC!)
+  },
+  connectors: [injected()]
 })
+
+const queryClient = new QueryClient()
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <WagmiConfig config={config}>
-      {children}
-    </WagmiConfig>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </WagmiProvider>
   )
 }
