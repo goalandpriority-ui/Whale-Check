@@ -1,13 +1,12 @@
 'use client'
 
-import { ReactNode } from 'react'
-import { WagmiConfig, createConfig, configureChains } from 'wagmi'
-import { base } from 'wagmi/chains'
-import { alchemyProvider } from 'wagmi/providers/alchemy'
-import { publicProvider } from 'wagmi/providers/public'
-import { InjectedConnector } from 'wagmi/connectors/injected'
-import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactNode } from "react"
+import { WagmiConfig, createConfig, configureChains } from "wagmi"
+import { base } from "wagmi/chains"
+import { alchemyProvider } from "wagmi/providers/alchemy"
+import { publicProvider } from "wagmi/providers/public"
+import { InjectedConnector, WalletConnectConnector } from "@wagmi/core"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 // Configure chains
 const { chains, publicClient, webSocketPublicClient } = configureChains(
