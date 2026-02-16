@@ -3,10 +3,10 @@
 import { ReactNode } from 'react'
 import { WagmiConfig, createConfig, configureChains } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { alchemyProvider } from '@wagmi/core/providers/alchemy'
-import { publicProvider } from '@wagmi/core/providers/public'
-import { InjectedConnector } from '@wagmi/core/connectors/injected'
-import { WalletConnectConnector } from '@wagmi/core/connectors/walletConnect'
+import { alchemyProvider } from 'wagmi/providers/alchemy'
+import { publicProvider } from 'wagmi/providers/public'
+import { InjectedConnector } from 'wagmi/connectors/injected'
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Configure chains
@@ -46,4 +46,4 @@ export default function Providers({ children }: { children: ReactNode }) {
       </QueryClientProvider>
     </WagmiConfig>
   )
-}
+      }
