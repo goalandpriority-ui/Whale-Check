@@ -4,8 +4,8 @@ import { ReactNode } from 'react'
 import { WagmiConfig, createConfig, configureChains, mainnet } from 'wagmi'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
-import { InjectedConnector } from '@wagmi/connectors/injected'
-import { WalletConnectConnector } from '@wagmi/connectors/walletConnect'
+import { InjectedConnector } from '@wagmi/core/connectors/injected'
+import { WalletConnectConnector } from '@wagmi/core/connectors/walletConnect'
 
 const { chains, publicClient } = configureChains(
   [mainnet],
