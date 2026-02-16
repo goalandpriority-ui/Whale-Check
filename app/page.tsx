@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network } from "alchemy-sdk"
+import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_RPC?.split("/v2/")[1],
@@ -25,13 +25,12 @@ export default function Home() {
       const history = await alchemy.core.getAssetTransfers({
         fromBlock: "0x0",
         fromAddress: address,
-        category: ["external"],
+        category: [AssetTransfersCategory.EXTERNAL], // ✅ FIXED
       })
 
       const count = history.transfers.length
       setTxCount(count)
 
-      // Simple categorization
       if (count > 100) {
         setCategory("Whale 🐋")
       } else if (count > 20) {
@@ -39,6 +38,7 @@ export default function Home() {
       } else {
         setCategory("Shrimp 🦐")
       }
+
     } catch (err) {
       console.error(err)
     }
