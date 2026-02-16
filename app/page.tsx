@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
+import { Alchemy, Network } from "alchemy-sdk"
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_RPC?.split("/v2/")[1],
@@ -10,7 +10,11 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
-const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".toLowerCase()
+// 🔥 Uniswap / DEX Routers list (Base chain)
+const DEX_ROUTERS = [
+  "0x1f98431c8ad98523631ae4a59f267346ea31f984", // Example Uniswap router
+  // Add other Base DEX router addresses here in lowercase
+].map((addr) => addr.toLowerCase())
 
 export default function Home() {
   const [address, setAddress] = useState("")
@@ -24,57 +28,68 @@ export default function Home() {
     setLoading(true)
 
     try {
+      const cleanAddress = address.toLowerCase()
+
+      // 1️⃣ Fetch all ERC20 transfers from wallet
       const transfers = await alchemy.core.getAssetTransfers({
         fromBlock: "0x0",
         toBlock: "latest",
-        fromAddress: address,
-        category: [
-          AssetTransfersCategory.EXTERNAL,
-          AssetTransfersCategory.ERC20
-        ],
+        fromAddress: cleanAddress,
+        category: ["erc20"],
         withMetadata: true,
-        maxCount: 1000
       })
 
       const txs = transfers.transfers
-      setTxCount(txs.length)
+
+      // 2️⃣ Filter only DEX router trades
+      const dexTxs = txs.filter((tx: any) => {
+        const toAddr = tx.to?.toLowerCase()
+        return DEX_ROUTERS.includes(toAddr)
+      })
+
+      setTxCount(dexTxs.length)
 
       let totalUSD = 0
-      let totalEth = 0
 
-      for (const tx of txs as any[]) {
+      for (const tx of dexTxs as any[]) {
+        const tokenAddress = tx.rawContract?.address?.toLowerCase()
+        const tokenDecimals = Number(tx.rawContract?.decimals || 18)
+        const rawValue = Number(tx.rawContract?.value || 0)
+        const tokenAmount = rawValue / Math.pow(10, tokenDecimals)
 
-        // 1️⃣ ETH transfers
-        if (tx.category === "external" && tx.value) {
-          totalEth += Number(tx.value)
+        // Convert token to USD
+        let usdValue = tokenAmount
+        // For simplicity, USDC or USDT directly add (can extend to fetch USD prices)
+        if (tokenAddress === "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913") {
+          usdValue = tokenAmount
+        } else {
+          // For other tokens, fetch price via Coingecko
+          try {
+            const priceRes = await fetch(
+              `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${tokenAddress}&vs_currencies=usd`
+            )
+            const priceData = await priceRes.json()
+            usdValue = tokenAmount * (priceData[tokenAddress]?.usd || 0)
+          } catch {
+            usdValue = 0
+          }
         }
 
-        // 2️⃣ ERC20 transfers
-        if (tx.category === "erc20") {
-          const tokenAddress = tx.rawContract?.address?.toLowerCase()
-          const tokenDecimals = Number(tx.rawContract?.decimals || 18)
-          const rawValue = Number(tx.rawContract?.value || 0)
-          const tokenAmount = rawValue / Math.pow(10, tokenDecimals)
-
-          if (tokenAddress === BASE_USDC) totalUSD += tokenAmount
-        }
+        totalUSD += usdValue
       }
 
-      // ETH to USD
-      const priceRes = await fetch(
-        "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
-      )
-      const priceData = await priceRes.json()
-      const ethPrice = priceData.ethereum.usd
-
-      totalUSD += totalEth * ethPrice
       setVolumeUSD(totalUSD)
 
-      // 🐋 Category
-      if (txs.length > 500 && totalUSD > 100000) setCategory("Whale 🐋")
-      else if (txs.length > 200 || totalUSD > 10000) setCategory("Shark 🦈")
-      else if (txs.length > 50 || totalUSD > 1000) setCategory("Dolphin 🐬")
-      else setCategory("Shrimp 🦐")
+      // 🐋 Category Logic
+      if (dexTxs.length > 500 && totalUSD > 100000) {
+        setCategory("Whale 🐋")
+      } else if (dexTxs.length > 200 || totalUSD > 10000) {
+        setCategory("Shark 🦈")
+      } else if (dexTxs.length > 50 || totalUSD > 1000) {
+        setCategory("Dolphin 🐬")
+      } else {
+        setCategory("Shrimp 🦐")
+      }
 
     } catch (err) {
       console.error(err)
@@ -85,7 +100,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: "40px", background: "black", minHeight: "100vh", color: "white" }}>
-      <h1>🐋 Base Whale Engine (Smart Volume Mode)</h1>
+      <h1>🐋 Base Whale Engine (DEX-only Mode)</h1>
 
       <input
         style={{ padding: "10px", width: "400px", marginTop: "20px" }}
@@ -104,12 +119,12 @@ export default function Home() {
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Full Base Smart Activity</h2>
+        <h2>📊 Full Base DEX Activity</h2>
         <p>Address: {address}</p>
         <p>Total Transactions: {txCount}</p>
-        <p>Estimated Total Volume (USD): ${volumeUSD.toFixed(2)}</p>
+        <p>Estimated DEX ETH Volume (USD): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
     </main>
   )
-        }
+}
