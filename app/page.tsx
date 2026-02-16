@@ -10,6 +10,11 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
+// 🔥 Add known Base DEX router addresses here (example placeholders)
+const DEX_ROUTERS = [
+  "0xE592427A0AEce92De3Edee1F18E0157C05861564".toLowerCase(), // Uniswap V3 Router
+]
+
 export default function Home() {
   const [address, setAddress] = useState("")
   const [txCount, setTxCount] = useState(0)
@@ -34,16 +39,20 @@ export default function Home() {
       const txs = transfers.transfers
       setTxCount(txs.length)
 
-      // Calculate total ETH sent
       let totalEth = 0
 
-      txs.forEach((tx: any) => {
-        if (tx.value) {
-          totalEth += Number(tx.value)
-        }
-      })
+      for (const tx of txs as any[]) {
+        const to = tx.to?.toLowerCase()
 
-      // Get ETH price
+        // Only count if interacting with DEX router
+        if (to && DEX_ROUTERS.includes(to)) {
+          if (tx.value) {
+            totalEth += Number(tx.value)
+          }
+        }
+      }
+
+      // Fetch ETH price
       const priceRes = await fetch(
         "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
       )
@@ -53,7 +62,7 @@ export default function Home() {
       const usdVolume = totalEth * ethPrice
       setVolumeUSD(usdVolume)
 
-      // 🐋 Category Logic
+      // Category Logic
       if (txs.length > 500 && usdVolume > 100000) {
         setCategory("Whale 🐋")
       } else if (txs.length > 200 || usdVolume > 10000) {
@@ -73,7 +82,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: "40px", background: "black", minHeight: "100vh", color: "white" }}>
-      <h1>🐋 Base Whale Engine (Full History)</h1>
+      <h1>🐋 Base Whale Engine (DEX Accurate Mode)</h1>
 
       <input
         style={{ padding: "10px", width: "400px", marginTop: "20px" }}
@@ -92,10 +101,10 @@ export default function Home() {
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Full Base Activity</h2>
+        <h2>📊 Full Base DEX Activity</h2>
         <p>Address: {address}</p>
         <p>Total Transactions: {txCount}</p>
-        <p>Estimated ETH Volume (USD): ${volumeUSD.toFixed(2)}</p>
+        <p>Estimated DEX ETH Volume (USD): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
     </main>
