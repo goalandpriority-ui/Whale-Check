@@ -22,15 +22,9 @@ export default function Home() {
     setLoading(true)
 
     try {
-      // Get current block
-      const currentBlock = await alchemy.core.getBlockNumber()
-
-      // Approx 1 year blocks on Base (~2.3M)
-      const fromBlock = currentBlock - 2300000
-
-      // 1️⃣ Get Transactions (last 1 year)
+      // 🔥 FULL BASE HISTORY
       const transfers = await alchemy.core.getAssetTransfers({
-        fromBlock: `0x${fromBlock.toString(16)}`,
+        fromBlock: "0x0",
         toBlock: "latest",
         fromAddress: address,
         category: [AssetTransfersCategory.EXTERNAL],
@@ -40,7 +34,7 @@ export default function Home() {
       const txs = transfers.transfers
       setTxCount(txs.length)
 
-      // 2️⃣ Calculate ETH Volume from tx value
+      // Calculate total ETH sent
       let totalEth = 0
 
       txs.forEach((tx: any) => {
@@ -49,7 +43,7 @@ export default function Home() {
         }
       })
 
-      // 3️⃣ Get ETH Price (simple Coingecko fetch)
+      // Get ETH price
       const priceRes = await fetch(
         "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
       )
@@ -59,7 +53,7 @@ export default function Home() {
       const usdVolume = totalEth * ethPrice
       setVolumeUSD(usdVolume)
 
-      // 4️⃣ Category Logic
+      // 🐋 Category Logic
       if (txs.length > 500 && usdVolume > 100000) {
         setCategory("Whale 🐋")
       } else if (txs.length > 200 || usdVolume > 10000) {
@@ -79,7 +73,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: "40px", background: "black", minHeight: "100vh", color: "white" }}>
-      <h1>🐋 Base Whale Engine (1Y Advanced)</h1>
+      <h1>🐋 Base Whale Engine (Full History)</h1>
 
       <input
         style={{ padding: "10px", width: "400px", marginTop: "20px" }}
@@ -98,9 +92,9 @@ export default function Home() {
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 1 Year Activity</h2>
+        <h2>📊 Full Base Activity</h2>
         <p>Address: {address}</p>
-        <p>Transactions: {txCount}</p>
+        <p>Total Transactions: {txCount}</p>
         <p>Estimated ETH Volume (USD): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
