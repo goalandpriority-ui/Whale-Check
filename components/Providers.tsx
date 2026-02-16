@@ -1,41 +1,46 @@
-"use client"
+'use client'
 
 import { ReactNode } from "react"
 import { createConfig, WagmiConfig, configureChains } from "wagmi"
-import { publicProvider } from "wagmi/providers/public"
 import { base } from "wagmi/chains"
+import { publicProvider } from "wagmi/providers/public"
+import { alchemyProvider } from "wagmi/providers/alchemy"
 import { InjectedConnector } from "wagmi/connectors/injected"
 import { WalletConnectConnector } from "wagmi/connectors/walletConnect"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-const { chains, publicClient } = configureChains(
+// Configure chains and providers
+const { chains, publicClient, webSocketPublicClient } = configureChains(
   [base],
-  [publicProvider()]
+  [
+    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY }),
+    publicProvider()
+  ]
 )
 
-const config = createConfig({
+// Wagmi config
+const wagmiConfig = createConfig({
   autoConnect: true,
-  publicClient,
   connectors: [
-    new InjectedConnector({
-      chains,
-      options: { shimDisconnect: true },
-    }),
+    new InjectedConnector({ chains }),
     new WalletConnectConnector({
       chains,
       options: {
-        projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
-        showQrModal: true,
-      },
-    }),
+        projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID,
+        showQrModal: true
+      }
+    })
   ],
+  publicClient,
+  webSocketPublicClient
 })
 
+// React Query
 const queryClient = new QueryClient()
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <WagmiConfig config={config}>
+    <WagmiConfig config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>
