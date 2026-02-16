@@ -35,7 +35,7 @@ const wagmiConfig = createConfig({
   webSocketPublicClient
 })
 
-// React Query
+// React Query client
 const queryClient = new QueryClient()
 
 export default function Providers({ children }: { children: ReactNode }) {
