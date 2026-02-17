@@ -1,65 +1,61 @@
 'use client'
 
-import { useState } from 'react'
+import { useState } from "react"
 
 export default function WalletAnalyzer() {
-  const [wallet, setWallet] = useState('')
+  const [address, setAddress] = useState("")
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<number | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [totalTransfers, setTotalTransfers] = useState<number | null>(null)
+  const [error, setError] = useState("")
 
-  const handleAnalyze = async () => {
+  const analyzeWallet = async () => {
+    if (!address) return setError("Please enter a wallet address")
+    setError("")
     setLoading(true)
-    setResult(null)
-    setError(null)
+    setTotalTransfers(null)
 
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: wallet }),
+      const res = await fetch(`/api/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address })
       })
-
       const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Something went wrong')
+      if (res.ok) {
+        setTotalTransfers(data.totalTransfers)
       } else {
-        setResult(data.totalTransfers)
+        setError(data.error || "Something went wrong")
       }
-    } catch (err: any) {
-      setError(err.message || 'Network error')
+    } catch (err) {
+      setError("Failed to fetch data")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-4 bg-black text-white rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">🐋 Base Whale Checker</h1>
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
       <input
         type="text"
+        value={address}
         placeholder="Enter wallet address"
-        className="w-full p-2 mb-4 rounded text-black"
-        value={wallet}
-        onChange={(e) => setWallet(e.target.value)}
+        onChange={(e) => setAddress(e.target.value)}
+        style={{ padding: "8px", width: "300px" }}
       />
       <button
-        className="w-full p-2 bg-blue-600 rounded font-bold hover:bg-blue-700"
-        onClick={handleAnalyze}
-        disabled={loading || !wallet}
+        onClick={analyzeWallet}
+        style={{ padding: "8px 16px", marginLeft: "10px" }}
+        disabled={loading}
       >
-        {loading ? 'Analyzing...' : 'Analyze Wallet'}
+        {loading ? "Analyzing..." : "Analyze Wallet"}
       </button>
 
-      {result !== null && (
-        <div className="mt-4 p-2 bg-gray-800 rounded">
-          <p>Total ERC20 Transactions: {result}</p>
-          {/* Later we can add Total Volume + Category */}
-        </div>
+      {error && <p style={{ color: "red", marginTop: "20px" }}>{error}</p>}
+      {totalTransfers !== null && (
+        <p style={{ marginTop: "20px" }}>
+          Total ERC20 Transfers: {totalTransfers}
+        </p>
       )}
-
-      {error && <p className="mt-4 text-red-500">{error}</p>}
     </div>
   )
 }
