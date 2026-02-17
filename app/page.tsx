@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network } from "alchemy-sdk"
-import { ethers } from "ethers"
+import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
+import { BigNumber, ethers } from "ethers"
 
 const config = {
-  apiKey: process.env.ALCHEMY_KEY!, // ungaloda environment variable
+  apiKey: process.env.ALCHEMY_KEY!, // macha, environment variable direct ALCHEMY_KEY
   network: Network.BASE_MAINNET,
 }
 
@@ -31,21 +31,30 @@ export default function Home() {
     try {
       let allTransfers: any[] = []
       let pageKey: string | undefined = undefined
+      let fetchedTx = 0
+      const maxFetch = 1000 // macha, max 1000 transactions per request
 
       do {
         const response = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
           toBlock: "latest",
           fromAddress: address,
-          category: ["external", "erc20", "erc721", "erc1155"],
-          maxCount: "0x3e8", // 1000 per request
-          pageKey: pageKey,
+          category: [
+            AssetTransfersCategory.EXTERNAL,
+            AssetTransfersCategory.ERC20,
+            AssetTransfersCategory.ERC721,
+            AssetTransfersCategory.ERC1155,
+          ],
+          pageKey,
+          maxCount: "0x3e8", // 1000
         })
 
         allTransfers.push(...response.transfers)
         pageKey = response.pageKey
-      } while (pageKey)
+        fetchedTx += response.transfers.length
+      } while (pageKey && fetchedTx < maxFetch)
 
+      // Analyze swaps
       let swaps = 0
       let totalVolume = 0
 
@@ -59,10 +68,9 @@ export default function Home() {
           if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
             swaps++
 
-            // crude volume estimate from log data
+            // crude volume estimate
             const amountHex = log.data.slice(0, 66)
-            const amount = Number(ethers.BigNumber.from(amountHex).toString())
-
+            const amount = Number(BigNumber.from(amountHex).toString())
             const ethAmount = amount / 1e18
             totalVolume += ethAmount * ETH_PRICE
           }
@@ -81,7 +89,6 @@ export default function Home() {
       } else {
         setCategory("Shrimp 🦐")
       }
-
     } catch (err) {
       console.error(err)
     }
@@ -90,13 +97,15 @@ export default function Home() {
   }
 
   return (
-    <main style={{
-      padding: "40px",
-      background: "black",
-      minHeight: "100vh",
-      color: "white",
-      fontFamily: "Arial",
-    }}>
+    <main
+      style={{
+        padding: "40px",
+        background: "black",
+        minHeight: "100vh",
+        color: "white",
+        fontFamily: "Arial",
+      }}
+    >
       <h1>🐋 Base Real Swap Detector</h1>
 
       <input
