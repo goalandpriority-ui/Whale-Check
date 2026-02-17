@@ -42,7 +42,7 @@ async function fetchWalletTransactions(address: string) {
 }
 
 function calculateVolumeUSD(transactions: any[]) {
-  const ETH_PRICE = 1800; // example price
+  const ETH_PRICE = 1800; // example ETH price
   let totalVolume = 0;
 
   transactions.forEach((tx) => {
