@@ -31,10 +31,16 @@ async function fetchWalletTransactions(address: string) {
         AssetTransfersCategory.ERC20,
         AssetTransfersCategory.ERC721,
       ],
-      maxCount: 1000, // number type
+      maxCount: 1000,
       pageKey,
     });
-    allTransactions = allTransactions.concat(response.transfers);
+
+    // Filter unique transactions by nonce
+    const uniqueTxs = response.transfers.filter((tx) => 
+      !allTransactions.some((t) => t.hash === tx.hash)
+    );
+
+    allTransactions = allTransactions.concat(uniqueTxs);
     pageKey = response.pageKey;
   } while (pageKey);
 
@@ -73,7 +79,7 @@ export default function BaseWhaleChecker() {
         category,
       });
     } catch (err) {
-      console.error(err);
+      console.error("Wallet analysis error:", err);
       setResult(null);
     } finally {
       setLoading(false);
