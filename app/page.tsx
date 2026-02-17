@@ -4,11 +4,15 @@ import { useState } from "react"
 import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
 
 const config = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!, // ✅ Correct env variable
+  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
   network: Network.BASE_MAINNET,
 }
 
 const alchemy = new Alchemy(config)
+
+// Base Token Addresses
+const BASE_USDC = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+const BASE_WETH = "0x4200000000000000000000000000000000000006"
 
 export default function Home() {
   const [address, setAddress] = useState("")
@@ -33,7 +37,6 @@ export default function Home() {
       })
 
       const txs = transfers.transfers
-
       setTxCount(txs.length)
 
       let totalUSD = 0
@@ -43,20 +46,20 @@ export default function Home() {
         const tokenDecimals = Number(tx.rawContract?.decimals || 18)
         const rawValue = Number(tx.rawContract?.value || 0)
 
-        if (!rawValue) continue
+        if (!rawValue || !tokenAddress) continue
 
         const tokenAmount = rawValue / Math.pow(10, tokenDecimals)
 
         let usdValue = 0
 
-        try {
-          const priceRes = await fetch(
-            `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${tokenAddress}&vs_currencies=usd`
-          )
-          const priceData = await priceRes.json()
-          usdValue = tokenAmount * (priceData[tokenAddress]?.usd || 0)
-        } catch {
-          usdValue = 0
+        // ✅ Base USDC (1 USDC = $1)
+        if (tokenAddress === BASE_USDC) {
+          usdValue = tokenAmount
+        }
+
+        // ✅ Base WETH (Temporary ETH price = $3000)
+        else if (tokenAddress === BASE_WETH) {
+          usdValue = tokenAmount * 3000
         }
 
         totalUSD += usdValue
