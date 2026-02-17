@@ -1,14 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
-import { analyzeWallet } from "@/lib/analyzeWallet";
+import { NextResponse } from "next/server"
+import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
 
-export async function POST(req: NextRequest) {
-  const { wallet } = await req.json();
-  if (!wallet) return NextResponse.json({ error: "Wallet address required" }, { status: 400 });
+const config = {
+  apiKey: process.env.ALCHEMY_KEY!,
+  network: Network.BASE_MAINNET,
+}
 
-  try {
-    const result = await analyzeWallet(wallet);
-    return NextResponse.json(result);
-  } catch (err) {
-    return NextResponse.json({ error: "Failed to analyze wallet" }, { status: 500 });
+const alchemy = new Alchemy(config)
+
+export async function POST(req: Request) {
+  const { address } = await req.json()
+
+  if (!address) {
+    return NextResponse.json({ error: "No address" }, { status: 400 })
   }
+
+  let pageKey: string | undefined = undefined
+  let allTransfers: any[] = []
+
+  do {
+    const res = await alchemy.core.getAssetTransfers({
+      fromBlock: "0x0",
+      toBlock: "latest",
+      fromAddress: address,
+      category: [AssetTransfersCategory.ERC20],
+      withMetadata: true,
+      pageKey,
+    })
+
+    allTransfers.push(...res.transfers)
+    pageKey = res.pageKey
+  } while (pageKey)
+
+  return NextResponse.json({
+    totalTransfers: allTransfers.length,
+  })
 }
