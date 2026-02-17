@@ -11,6 +11,7 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
+// Uniswap V3 Swap event signature
 const SWAP_TOPIC =
   "0xc42079f94a6350d7e6235f29174924f928f0b8b4f6eaf5e3e1a1f8c6f6e5c5f"
 
@@ -31,11 +32,10 @@ export default function Home() {
       let allTransfers: any[] = []
       let pageKey: string | undefined = undefined
       let fetchedTx = 0
-      const maxFetch = 1000
 
       do {
         const response = await alchemy.core.getAssetTransfers({
-          fromBlock: "0x0",
+          fromBlock: "0x0", // genesis block, last 1.5 years full
           toBlock: "latest",
           fromAddress: address,
           category: [
@@ -45,13 +45,13 @@ export default function Home() {
             AssetTransfersCategory.ERC1155,
           ],
           pageKey,
-          maxCount: 1000,
+          maxCount: 1000, // number of transfers per request
         })
 
         allTransfers.push(...response.transfers)
         pageKey = response.pageKey
         fetchedTx += response.transfers.length
-      } while (pageKey && fetchedTx < maxFetch)
+      } while (pageKey)
 
       // Analyze swaps
       let swaps = 0
@@ -67,9 +67,10 @@ export default function Home() {
           if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
             swaps++
 
+            // crude volume estimate
             const amountHex = log.data.slice(0, 66)
-            const amount = BigInt(amountHex)
-            const ethAmount = Number(ethers.formatUnits(amount, 18))
+            const amount = Number(ethers.BigNumber.from(amountHex).toString())
+            const ethAmount = amount / 1e18
             totalVolume += ethAmount * ETH_PRICE
           }
         }
@@ -78,10 +79,15 @@ export default function Home() {
       setSwapCount(swaps)
       setVolumeUSD(totalVolume)
 
-      if (totalVolume > 100000) setCategory("Whale 🐋")
-      else if (totalVolume > 10000) setCategory("Shark 🦈")
-      else if (totalVolume > 1000) setCategory("Dolphin 🐬")
-      else setCategory("Shrimp 🦐")
+      if (totalVolume > 100000) {
+        setCategory("Whale 🐋")
+      } else if (totalVolume > 10000) {
+        setCategory("Shark 🦈")
+      } else if (totalVolume > 1000) {
+        setCategory("Dolphin 🐬")
+      } else {
+        setCategory("Shrimp 🦐")
+      }
     } catch (err) {
       console.error(err)
     }
