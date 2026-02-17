@@ -1,11 +1,11 @@
-'use client'
+"use client"
 
 import { useState } from "react"
 import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
-import { ethers } from "ethers"
+import { BigNumber, ethers } from "ethers"
 
 const config = {
-  apiKey: process.env.ALCHEMY_KEY!, // macha, direct ALCHEMY_KEY
+  apiKey: process.env.ALCHEMY_KEY!, // macha, environment variable direct ALCHEMY_KEY
   network: Network.BASE_MAINNET,
 }
 
@@ -46,7 +46,7 @@ export default function Home() {
             AssetTransfersCategory.ERC1155,
           ],
           pageKey,
-          maxCount: "0x3e8", // 1000
+          maxCount: 1000, // number fix, not string
         })
 
         allTransfers.push(...response.transfers)
@@ -68,9 +68,10 @@ export default function Home() {
           if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
             swaps++
 
-            // ethers v6 compatible parsing
+            // crude volume estimate
             const amountHex = log.data.slice(0, 66)
-            const ethAmount = Number(ethers.formatUnits(amountHex, 18))
+            const amount = BigNumber.from(amountHex)
+            const ethAmount = Number(ethers.formatUnits(amount, 18))
             totalVolume += ethAmount * ETH_PRICE
           }
         }
