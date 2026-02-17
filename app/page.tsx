@@ -10,6 +10,15 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
+// 🔥 Known Base token addresses (lowercase)
+const TOKENS = {
+  USDC: "0x833589fcd6edb6e08f4c7c4e6e9b1e9f0e4b8b1f",
+  WETH: "0x4200000000000000000000000000000000000006",
+  DAI:  "0x50c5725949a6f0c72e6c4e3f3b2b9e7a1c5d6e7f",
+}
+
+const ETH_PRICE = 3000
+
 export default function Home() {
   const [address, setAddress] = useState("")
   const [totalTransfers, setTotalTransfers] = useState(0)
@@ -26,9 +35,9 @@ export default function Home() {
       let pageKey: string | undefined = undefined
       let allTransfers: any[] = []
 
-      // 🔥 Fetch outgoing transfers
+      // Outgoing
       do {
-        const response = await alchemy.core.getAssetTransfers({
+        const res = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
           toBlock: "latest",
           fromAddress: address,
@@ -37,15 +46,15 @@ export default function Home() {
           pageKey,
         })
 
-        allTransfers.push(...response.transfers)
-        pageKey = response.pageKey
+        allTransfers.push(...res.transfers)
+        pageKey = res.pageKey
       } while (pageKey)
 
       pageKey = undefined
 
-      // 🔥 Fetch incoming transfers
+      // Incoming
       do {
-        const response = await alchemy.core.getAssetTransfers({
+        const res = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
           toBlock: "latest",
           toAddress: address,
@@ -54,20 +63,17 @@ export default function Home() {
           pageKey,
         })
 
-        allTransfers.push(...response.transfers)
-        pageKey = response.pageKey
+        allTransfers.push(...res.transfers)
+        pageKey = res.pageKey
       } while (pageKey)
 
       setTotalTransfers(allTransfers.length)
 
-      // 🔥 Group transfers by transaction hash
       const txMap: Record<string, any[]> = {}
 
       for (const tx of allTransfers) {
         if (!tx.hash) continue
-        if (!txMap[tx.hash]) {
-          txMap[tx.hash] = []
-        }
+        if (!txMap[tx.hash]) txMap[tx.hash] = []
         txMap[tx.hash].push(tx)
       }
 
@@ -81,8 +87,16 @@ export default function Home() {
         let incoming: any[] = []
 
         for (const t of transfers) {
-          if (!t.rawContract?.decimal) continue
-          if (!t.value) continue
+          if (!t.rawContract?.address) continue
+
+          const tokenAddress = t.rawContract.address.toLowerCase()
+
+          // Only consider stablecoins + WETH
+          if (
+            tokenAddress !== TOKENS.USDC &&
+            tokenAddress !== TOKENS.WETH &&
+            tokenAddress !== TOKENS.DAI
+          ) continue
 
           if (t.from?.toLowerCase() === address.toLowerCase()) {
             outgoing.push(t)
@@ -93,28 +107,23 @@ export default function Home() {
           }
         }
 
-        // 🔥 Detect swap pattern (at least 1 out + 1 in)
         if (outgoing.length > 0 && incoming.length > 0) {
           swapCount++
-
-          let largestOutgoing = 0
 
           for (const out of outgoing) {
             const decimals = Number(out.rawContract.decimal)
             const amount = Number(out.value)
-
             if (isNaN(amount)) continue
 
             const actual = amount / Math.pow(10, decimals)
 
-            if (actual > largestOutgoing) {
-              largestOutgoing = actual
-            }
-          }
+            const tokenAddress = out.rawContract.address.toLowerCase()
 
-          // Ignore dust swaps (< $1 approx)
-          if (largestOutgoing > 1) {
-            totalVolume += largestOutgoing
+            if (tokenAddress === TOKENS.WETH) {
+              totalVolume += actual * ETH_PRICE
+            } else {
+              totalVolume += actual
+            }
           }
         }
       }
@@ -133,23 +142,21 @@ export default function Home() {
       }
 
     } catch (err) {
-      console.error("Error analyzing wallet:", err)
+      console.error(err)
     }
 
     setLoading(false)
   }
 
   return (
-    <main
-      style={{
-        padding: "40px",
-        background: "black",
-        minHeight: "100vh",
-        color: "white",
-        fontFamily: "Arial",
-      }}
-    >
-      <h1>🐋 Base Whale Engine (Smart Swap Pattern Mode)</h1>
+    <main style={{
+      padding: "40px",
+      background: "black",
+      minHeight: "100vh",
+      color: "white",
+      fontFamily: "Arial",
+    }}>
+      <h1>🐋 Base Whale Engine (Stable USD Mode)</h1>
 
       <input
         style={{
@@ -182,10 +189,10 @@ export default function Home() {
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Smart Swap Detection</h2>
+        <h2>📊 Stable Swap Detection</h2>
         <p>Total ERC20 Transfers: {totalTransfers}</p>
         <p>Detected Swap Transactions: {swapTxCount}</p>
-        <p>Estimated Trading Volume (Token Units): ${volumeUSD.toFixed(2)}</p>
+        <p>Estimated Trading Volume (USD): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
     </main>
