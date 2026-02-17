@@ -4,14 +4,13 @@ import { useState } from "react";
 import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk";
 import { ethers } from "ethers";
 
-// Alchemy config
 const config = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
-  network: Network.ETH_MAINNET,
+  network: Network.BASE_MAINNET, // Base mainnet
 };
+
 const alchemy = new Alchemy(config);
 
-// Wallet category based on USD volume
 function categorizeVolume(volumeUSD: number) {
   if (volumeUSD < 1000) return "Shrimp 🦐";
   if (volumeUSD < 10000) return "Dolphin 🐬";
@@ -19,34 +18,37 @@ function categorizeVolume(volumeUSD: number) {
   return "Big Whale 🐳";
 }
 
-// Fetch wallet transactions
 async function fetchWalletTransactions(address: string) {
   let pageKey: string | undefined = undefined;
   let allTransactions: any[] = [];
 
-  do {
-    const response = await alchemy.core.getAssetTransfers({
-      fromBlock: "0x0",
-      fromAddress: address,
-      category: [
-        AssetTransfersCategory.EXTERNAL,
-        AssetTransfersCategory.INTERNAL,
-        AssetTransfersCategory.ERC20,
-        AssetTransfersCategory.ERC721,
-      ],
-      maxCount: 100, // each request fetch 100 tx
-      pageKey,
-    });
-    allTransactions = allTransactions.concat(response.transfers);
-    pageKey = response.pageKey;
-  } while (pageKey);
+  try {
+    do {
+      const response = await alchemy.core.getAssetTransfers({
+        fromBlock: "0x0",
+        fromAddress: address,
+        category: [
+          AssetTransfersCategory.EXTERNAL,
+          AssetTransfersCategory.INTERNAL,
+          AssetTransfersCategory.ERC20,
+          AssetTransfersCategory.ERC721,
+        ],
+        maxCount: 1000,
+        pageKey,
+      });
+      allTransactions = allTransactions.concat(response.transfers);
+      pageKey = response.pageKey;
+    } while (pageKey);
+  } catch (err) {
+    console.error("Error fetching transactions:", err);
+    throw new Error("Failed to fetch wallet transactions");
+  }
 
   return allTransactions;
 }
 
-// Calculate total USD volume
 function calculateVolumeUSD(transactions: any[]) {
-  const ETH_PRICE = 1800; // example, use real-time price for production
+  const ETH_PRICE = 1800; // temporary fixed ETH price
   let totalVolume = 0;
 
   transactions.forEach((tx) => {
@@ -58,26 +60,20 @@ function calculateVolumeUSD(transactions: any[]) {
   return totalVolume;
 }
 
-// Component
 export default function BaseWhaleChecker() {
-  const [walletAddress, setWalletAddress] = useState("0x8C4BB608034fE666FeE1eE9a3a3bcB5F28A9a187");
+  const [walletAddress, setWalletAddress] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   const handleAnalyze = async () => {
     if (!walletAddress) return;
     setLoading(true);
-    setError(null);
+    setError("");
     setResult(null);
 
     try {
       const transactions = await fetchWalletTransactions(walletAddress);
-      if (transactions.length === 0) {
-        setError("No transactions found for this wallet.");
-        return;
-      }
-
       const totalVolumeUSD = calculateVolumeUSD(transactions);
       const category = categorizeVolume(totalVolumeUSD);
 
@@ -87,8 +83,7 @@ export default function BaseWhaleChecker() {
         category,
       });
     } catch (err: any) {
-      console.error(err);
-      setError("Failed to fetch wallet transactions. Check console for details.");
+      setError(err.message || "Failed to fetch wallet transactions");
     } finally {
       setLoading(false);
     }
@@ -97,7 +92,6 @@ export default function BaseWhaleChecker() {
   return (
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">🐋 Base Whale Checker</h1>
-
       <input
         type="text"
         value={walletAddress}
@@ -105,7 +99,6 @@ export default function BaseWhaleChecker() {
         placeholder="0x..."
         className="border p-2 w-full mb-2"
       />
-
       <button
         onClick={handleAnalyze}
         disabled={loading}
@@ -114,13 +107,15 @@ export default function BaseWhaleChecker() {
         {loading ? "Analyzing..." : "Analyze Wallet"}
       </button>
 
-      {error && <p className="text-red-500">{error}</p>}
+      {error && (
+        <div className="text-red-500 mb-2">{error}</div>
+      )}
 
       {result && (
         <div className="bg-gray-100 p-4 rounded">
           <p>Total Transactions: {result.totalTransactions}</p>
           <p>Total Volume (USD): ${result.totalVolumeUSD.toLocaleString()}</p>
-          <p>Wallet Category: {result.category}</p>
+          <p>Category: {result.category}</p>
         </div>
       )}
     </div>
