@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
 
 const config = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_RPC?.split("/v2/")[1],
+  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!, // ✅ Correct env variable
   network: Network.BASE_MAINNET,
 }
 
@@ -24,7 +24,6 @@ export default function Home() {
     try {
       const cleanAddress = address.toLowerCase()
 
-      // ✅ Fetch ALL ERC20 transfers
       const transfers = await alchemy.core.getAssetTransfers({
         fromBlock: "0x0",
         toBlock: "latest",
@@ -77,14 +76,21 @@ export default function Home() {
       }
 
     } catch (err) {
-      console.error(err)
+      console.error("Error fetching transfers:", err)
     }
 
     setLoading(false)
   }
 
   return (
-    <main style={{ padding: "40px", background: "black", minHeight: "100vh", color: "white" }}>
+    <main
+      style={{
+        padding: "40px",
+        background: "black",
+        minHeight: "100vh",
+        color: "white",
+      }}
+    >
       <h1>🐋 Base Whale Engine (ERC20 Mode)</h1>
 
       <input
