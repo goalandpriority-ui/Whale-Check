@@ -26,11 +26,29 @@ export default function Home() {
       let pageKey: string | undefined = undefined
       let allTransfers: any[] = []
 
+      // 🔥 Fetch outgoing transfers
       do {
         const response = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
           toBlock: "latest",
-          address: address,
+          fromAddress: address,
+          category: [AssetTransfersCategory.ERC20],
+          withMetadata: true,
+          pageKey,
+        })
+
+        allTransfers.push(...response.transfers)
+        pageKey = response.pageKey
+      } while (pageKey)
+
+      pageKey = undefined
+
+      // 🔥 Fetch incoming transfers
+      do {
+        const response = await alchemy.core.getAssetTransfers({
+          fromBlock: "0x0",
+          toBlock: "latest",
+          toAddress: address,
           category: [AssetTransfersCategory.ERC20],
           withMetadata: true,
           pageKey,
@@ -42,7 +60,7 @@ export default function Home() {
 
       setTotalTransfers(allTransfers.length)
 
-      // 🔥 Group by transaction hash
+      // 🔥 Group transfers by transaction hash
       const txMap: Record<string, any[]> = {}
 
       for (const tx of allTransfers) {
@@ -75,27 +93,28 @@ export default function Home() {
           }
         }
 
-        // 🔥 Swap pattern: at least 1 out + 1 in
+        // 🔥 Detect swap pattern (at least 1 out + 1 in)
         if (outgoing.length > 0 && incoming.length > 0) {
           swapCount++
 
-          // Take largest outgoing as trade size
-          let largest = 0
+          let largestOutgoing = 0
 
           for (const out of outgoing) {
             const decimals = Number(out.rawContract.decimal)
             const amount = Number(out.value)
+
             if (isNaN(amount)) continue
 
             const actual = amount / Math.pow(10, decimals)
 
-            if (actual > largest) {
-              largest = actual
+            if (actual > largestOutgoing) {
+              largestOutgoing = actual
             }
           }
 
-          if (largest > 1) { // ignore dust
-            totalVolume += largest
+          // Ignore dust swaps (< $1 approx)
+          if (largestOutgoing > 1) {
+            totalVolume += largestOutgoing
           }
         }
       }
@@ -114,7 +133,7 @@ export default function Home() {
       }
 
     } catch (err) {
-      console.error(err)
+      console.error("Error analyzing wallet:", err)
     }
 
     setLoading(false)
