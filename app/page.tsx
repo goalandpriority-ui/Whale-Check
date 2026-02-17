@@ -10,7 +10,6 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
-// Base Token Addresses
 const BASE_USDC = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
 const BASE_WETH = "0x4200000000000000000000000000000000000006"
 
@@ -21,27 +20,46 @@ export default function Home() {
   const [category, setCategory] = useState("Shrimp 🦐")
   const [loading, setLoading] = useState(false)
 
+  const fetchAllTransfers = async (direction: "from" | "to", wallet: string) => {
+    let allTransfers: any[] = []
+    let pageKey: string | undefined = undefined
+
+    do {
+      const response = await alchemy.core.getAssetTransfers({
+        fromBlock: "0x0",
+        toBlock: "latest",
+        category: [AssetTransfersCategory.ERC20],
+        withMetadata: true,
+        ...(direction === "from"
+          ? { fromAddress: wallet }
+          : { toAddress: wallet }),
+        pageKey,
+      })
+
+      allTransfers = [...allTransfers, ...response.transfers]
+      pageKey = response.pageKey
+
+    } while (pageKey)
+
+    return allTransfers
+  }
+
   const checkWhale = async () => {
     if (!address) return
     setLoading(true)
 
     try {
-      const cleanAddress = address.toLowerCase()
+      const wallet = address.toLowerCase()
 
-      const transfers = await alchemy.core.getAssetTransfers({
-        fromBlock: "0x0",
-        toBlock: "latest",
-        fromAddress: cleanAddress,
-        category: [AssetTransfersCategory.ERC20],
-        withMetadata: true,
-      })
+      const outgoing = await fetchAllTransfers("from", wallet)
+      const incoming = await fetchAllTransfers("to", wallet)
 
-      const txs = transfers.transfers
+      const txs = [...outgoing, ...incoming]
       setTxCount(txs.length)
 
       let totalUSD = 0
 
-      for (const tx of txs as any[]) {
+      for (const tx of txs) {
         const tokenAddress = tx.rawContract?.address?.toLowerCase()
         const tokenDecimals = Number(tx.rawContract?.decimals || 18)
         const rawValue = Number(tx.rawContract?.value || 0)
@@ -50,24 +68,17 @@ export default function Home() {
 
         const tokenAmount = rawValue / Math.pow(10, tokenDecimals)
 
-        let usdValue = 0
-
-        // ✅ Base USDC (1 USDC = $1)
         if (tokenAddress === BASE_USDC) {
-          usdValue = tokenAmount
+          totalUSD += tokenAmount
         }
 
-        // ✅ Base WETH (Temporary ETH price = $3000)
         else if (tokenAddress === BASE_WETH) {
-          usdValue = tokenAmount * 3000
+          totalUSD += tokenAmount * 3000
         }
-
-        totalUSD += usdValue
       }
 
       setVolumeUSD(totalUSD)
 
-      // 🐋 Category Logic
       if (txs.length > 500 && totalUSD > 100000) {
         setCategory("Whale 🐋")
       } else if (txs.length > 200 || totalUSD > 10000) {
@@ -79,25 +90,18 @@ export default function Home() {
       }
 
     } catch (err) {
-      console.error("Error fetching transfers:", err)
+      console.error(err)
     }
 
     setLoading(false)
   }
 
   return (
-    <main
-      style={{
-        padding: "40px",
-        background: "black",
-        minHeight: "100vh",
-        color: "white",
-      }}
-    >
-      <h1>🐋 Base Whale Engine (ERC20 Mode)</h1>
+    <main style={{ padding: 40, background: "black", minHeight: "100vh", color: "white" }}>
+      <h1>🐋 Base Whale Engine (ERC20 Mode - PRO)</h1>
 
       <input
-        style={{ padding: "10px", width: "400px", marginTop: "20px" }}
+        style={{ padding: 10, width: 400, marginTop: 20 }}
         placeholder="Paste wallet address"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
@@ -107,12 +111,12 @@ export default function Home() {
 
       <button
         onClick={checkWhale}
-        style={{ marginTop: "20px", padding: "10px 20px" }}
+        style={{ marginTop: 20, padding: "10px 20px" }}
       >
         {loading ? "Analyzing..." : "Analyze Wallet"}
       </button>
 
-      <div style={{ marginTop: "40px" }}>
+      <div style={{ marginTop: 40 }}>
         <h2>📊 Full ERC20 Activity</h2>
         <p>Address: {address}</p>
         <p>Total ERC20 Transactions: {txCount}</p>
