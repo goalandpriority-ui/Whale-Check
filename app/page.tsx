@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network } from "alchemy-sdk"
-import { ethers } from "ethers"
+import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
@@ -33,8 +32,8 @@ export default function Home() {
         fromBlock: "0x0",
         toBlock: "latest",
         fromAddress: address,
-        category: ["external"],
-        maxCount: "0x3e8",
+        category: [AssetTransfersCategory.EXTERNAL], // ✅ fixed
+        maxCount: 1000, // ✅ fixed (number not string)
       })
 
       let swaps = 0
@@ -50,9 +49,9 @@ export default function Home() {
           if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
             swaps++
 
-            // crude volume estimate from log data
+            // ✅ removed ethers.BigNumber (v6 issue)
             const amountHex = log.data.slice(0, 66)
-            const amount = Number(ethers.BigNumber.from(amountHex).toString())
+            const amount = parseInt(amountHex, 16)
 
             const ethAmount = amount / 1e18
             totalVolume += ethAmount * ETH_PRICE
