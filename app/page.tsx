@@ -10,13 +10,10 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
-const UNISWAP_ROUTER =
-  "0x2626664c2603336e57b271c5c0b26f421741e481"
-
 export default function Home() {
   const [address, setAddress] = useState("")
   const [totalTx, setTotalTx] = useState(0)
-  const [swapTx, setSwapTx] = useState(0)
+  const [erc20Tx, setErc20Tx] = useState(0)
   const [volumeUSD, setVolumeUSD] = useState(0)
   const [category, setCategory] = useState("Shrimp 🦐")
   const [loading, setLoading] = useState(false)
@@ -34,10 +31,8 @@ export default function Home() {
           fromBlock: "0x0",
           toBlock: "latest",
           fromAddress: address,
-          category: [
-            AssetTransfersCategory.EXTERNAL,
-            AssetTransfersCategory.ERC20,
-          ],
+          category: [AssetTransfersCategory.ERC20],
+          withMetadata: true,
           pageKey,
         })
 
@@ -46,22 +41,25 @@ export default function Home() {
       } while (pageKey)
 
       setTotalTx(allTransfers.length)
-
-      // Filter Uniswap interactions
-      const swaps = allTransfers.filter(
-        (tx) =>
-          tx.to &&
-          tx.to.toLowerCase() === UNISWAP_ROUTER
-      )
-
-      setSwapTx(swaps.length)
+      setErc20Tx(allTransfers.length)
 
       let totalVolume = 0
 
-      for (const tx of swaps) {
-        if (tx.value) {
-          totalVolume += Number(tx.value) * 3000
-        }
+      for (const tx of allTransfers) {
+        if (!tx.rawContract?.decimal) continue
+        if (!tx.value) continue
+
+        const decimals = Number(tx.rawContract.decimal)
+        const amount = Number(tx.value)
+
+        if (isNaN(amount)) continue
+
+        const actualAmount = amount / Math.pow(10, decimals)
+
+        // Ignore dust transfers (< $1 approx)
+        if (actualAmount < 1) continue
+
+        totalVolume += actualAmount
       }
 
       setVolumeUSD(totalVolume)
@@ -93,7 +91,7 @@ export default function Home() {
         fontFamily: "Arial",
       }}
     >
-      <h1>🐋 Base Whale Engine (Fast Mode)</h1>
+      <h1>🐋 Base Whale Engine (Smart ERC20 Mode)</h1>
 
       <input
         style={{
@@ -126,10 +124,9 @@ export default function Home() {
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Wallet Activity</h2>
-        <p>Total Transactions: {totalTx}</p>
-        <p>Uniswap Swap Transactions: {swapTx}</p>
-        <p>Estimated Trading Volume (USD): ${volumeUSD.toFixed(2)}</p>
+        <h2>📊 Smart ERC20 Activity</h2>
+        <p>Total ERC20 Transfers: {erc20Tx}</p>
+        <p>Estimated Trading Volume (Token Units): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
     </main>
