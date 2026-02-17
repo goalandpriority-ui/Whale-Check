@@ -1,148 +1,110 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
-import { ethers } from "ethers"
+import { useState } from "react";
+import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk";
+import { ethers } from "ethers";
 
 const config = {
   apiKey: process.env.ALCHEMY_KEY!,
-  network: Network.BASE_MAINNET,
+  network: Network.ETH_MAINNET,
+};
+const alchemy = new Alchemy(config);
+
+function categorizeVolume(volumeUSD: number) {
+  if (volumeUSD < 1000) return "Shrimp 🦐";
+  if (volumeUSD < 10000) return "Dolphin 🐬";
+  if (volumeUSD < 100000) return "Whale 🐋";
+  return "Big Whale 🐳";
 }
 
-const alchemy = new Alchemy(config)
+async function fetchWalletTransactions(address: string) {
+  let pageKey: string | undefined = undefined;
+  let allTransactions: any[] = [];
 
-// Uniswap V3 Swap event signature
-const SWAP_TOPIC =
-  "0xc42079f94a6350d7e6235f29174924f928f0b8b4f6eaf5e3e1a1f8c6f6e5c5f"
+  do {
+    const response = await alchemy.core.getAssetTransfers({
+      fromBlock: "0x0",
+      fromAddress: address,
+      category: [
+        AssetTransfersCategory.EXTERNAL,
+        AssetTransfersCategory.INTERNAL,
+        AssetTransfersCategory.ERC20,
+        AssetTransfersCategory.ERC721,
+      ],
+      maxCount: "0x3e8", // 1000 per page
+      pageKey,
+    });
+    allTransactions = allTransactions.concat(response.transfers);
+    pageKey = response.pageKey;
+  } while (pageKey);
 
-const ETH_PRICE = 3000
+  return allTransactions;
+}
 
-export default function Home() {
-  const [address, setAddress] = useState("")
-  const [swapCount, setSwapCount] = useState(0)
-  const [volumeUSD, setVolumeUSD] = useState(0)
-  const [category, setCategory] = useState("Shrimp 🦐")
-  const [loading, setLoading] = useState(false)
+function calculateVolumeUSD(transactions: any[]) {
+  const ETH_PRICE = 1800; // macha, example ETH price
+  let totalVolume = 0;
 
-  const analyzeWallet = async () => {
-    if (!address) return
-    setLoading(true)
+  transactions.forEach((tx) => {
+    if (!tx.value) return;
+    const amount = Number(ethers.formatEther(tx.value || "0")); // convert wei -> ETH
+    totalVolume += amount * ETH_PRICE;
+  });
 
+  return totalVolume;
+}
+
+export default function BaseRealSwapDetector() {
+  const [walletAddress, setWalletAddress] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleAnalyze = async () => {
+    if (!walletAddress) return;
+    setLoading(true);
     try {
-      let allTransfers: any[] = []
-      let pageKey: string | undefined = undefined
-      let fetchedTx = 0
+      const transactions = await fetchWalletTransactions(walletAddress);
+      const volumeUSD = calculateVolumeUSD(transactions);
+      const category = categorizeVolume(volumeUSD);
 
-      do {
-        const response = await alchemy.core.getAssetTransfers({
-          fromBlock: "0x0", // genesis block, last 1.5 years full
-          toBlock: "latest",
-          fromAddress: address,
-          category: [
-            AssetTransfersCategory.EXTERNAL,
-            AssetTransfersCategory.ERC20,
-            AssetTransfersCategory.ERC721,
-            AssetTransfersCategory.ERC1155,
-          ],
-          pageKey,
-          maxCount: 1000, // number of transfers per request
-        })
-
-        allTransfers.push(...response.transfers)
-        pageKey = response.pageKey
-        fetchedTx += response.transfers.length
-      } while (pageKey)
-
-      // Analyze swaps
-      let swaps = 0
-      let totalVolume = 0
-
-      for (const tx of allTransfers) {
-        if (!tx.hash) continue
-
-        const receipt = await alchemy.core.getTransactionReceipt(tx.hash)
-        if (!receipt || !receipt.logs) continue
-
-        for (const log of receipt.logs) {
-          if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
-            swaps++
-
-            // crude volume estimate
-            const amountHex = log.data.slice(0, 66)
-            const amount = Number(ethers.BigNumber.from(amountHex).toString())
-            const ethAmount = amount / 1e18
-            totalVolume += ethAmount * ETH_PRICE
-          }
-        }
-      }
-
-      setSwapCount(swaps)
-      setVolumeUSD(totalVolume)
-
-      if (totalVolume > 100000) {
-        setCategory("Whale 🐋")
-      } else if (totalVolume > 10000) {
-        setCategory("Shark 🦈")
-      } else if (totalVolume > 1000) {
-        setCategory("Dolphin 🐬")
-      } else {
-        setCategory("Shrimp 🦐")
-      }
+      setResult({
+        detectedSwaps: transactions.length,
+        estimatedVolumeUSD: volumeUSD,
+        category,
+      });
     } catch (err) {
-      console.error(err)
+      console.error(err);
+      setResult(null);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false)
-  }
+  };
 
   return (
-    <main
-      style={{
-        padding: "40px",
-        background: "black",
-        minHeight: "100vh",
-        color: "white",
-        fontFamily: "Arial",
-      }}
-    >
-      <h1>🐋 Base Real Swap Detector</h1>
-
+    <div className="p-4">
+      <h1 className="text-xl font-bold mb-4">🐋 Base Real Swap Detector</h1>
       <input
-        style={{
-          padding: "12px",
-          width: "420px",
-          marginTop: "20px",
-          borderRadius: "6px",
-          border: "none",
-        }}
-        placeholder="Paste wallet address"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
+        type="text"
+        value={walletAddress}
+        onChange={(e) => setWalletAddress(e.target.value)}
+        placeholder="0x..."
+        className="border p-2 w-full mb-2"
       />
-
-      <br />
-
       <button
-        onClick={analyzeWallet}
-        style={{
-          marginTop: "20px",
-          padding: "12px 24px",
-          borderRadius: "6px",
-          border: "none",
-          background: "#1f6feb",
-          color: "white",
-          cursor: "pointer",
-        }}
+        onClick={handleAnalyze}
+        disabled={loading}
+        className="bg-blue-500 text-white p-2 rounded mb-4"
       >
-        {loading ? "Scanning swaps..." : "Analyze Swaps"}
+        {loading ? "Analyzing..." : "Analyze Swaps"}
       </button>
 
-      <div style={{ marginTop: "40px" }}>
-        <h2>📊 Real Swap Detection</h2>
-        <p>Detected Swaps: {swapCount}</p>
-        <p>Estimated Volume (USD): ${volumeUSD.toFixed(2)}</p>
-        <p>Category: {category}</p>
-      </div>
-    </main>
-  )
+      {result && (
+        <div className="bg-gray-100 p-4 rounded">
+          <p>Detected Swaps: {result.detectedSwaps}</p>
+          <p>Estimated Volume (USD): ${result.estimatedVolumeUSD.toLocaleString()}</p>
+          <p>Category: {result.category}</p>
+        </div>
+      )}
+    </div>
+  );
 }
