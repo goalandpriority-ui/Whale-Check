@@ -22,7 +22,7 @@ async function fetchWalletTransactions(address: string) {
   let allTransactions: any[] = [];
 
   do {
-    const response = await alchemy.core.getAssetTransfers({
+    const response = await alchemy.transfers.getAssetTransfers({
       fromBlock: "0x0",
       fromAddress: address,
       category: [
@@ -31,7 +31,7 @@ async function fetchWalletTransactions(address: string) {
         AssetTransfersCategory.ERC20,
         AssetTransfersCategory.ERC721,
       ],
-      maxCount: "0x3e8", // 1000 per page
+      maxCount: 1000, // 🔥 number type, not string
       pageKey,
     });
     allTransactions = allTransactions.concat(response.transfers);
@@ -42,12 +42,12 @@ async function fetchWalletTransactions(address: string) {
 }
 
 function calculateVolumeUSD(transactions: any[]) {
-  const ETH_PRICE = 1800; // macha, example ETH price
+  const ETH_PRICE = 1800; // example ETH price
   let totalVolume = 0;
 
   transactions.forEach((tx) => {
     if (!tx.value) return;
-    const amount = Number(ethers.formatEther(tx.value || "0")); // convert wei -> ETH
+    const amount = Number(ethers.formatEther(tx.value)); // convert wei -> ETH
     totalVolume += amount * ETH_PRICE;
   });
 
