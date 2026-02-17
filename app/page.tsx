@@ -10,6 +10,7 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
+// Temporary fixed ETH price (can upgrade later)
 const ETH_PRICE = 3000
 
 export default function Home() {
@@ -28,7 +29,7 @@ export default function Home() {
       let pageKey: string | undefined = undefined
       let allTransfers: any[] = []
 
-      // 🔥 Fetch outgoing transfers
+      // 🔥 Fetch outgoing ERC20 transfers
       do {
         const res = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
@@ -45,7 +46,7 @@ export default function Home() {
 
       pageKey = undefined
 
-      // 🔥 Fetch incoming transfers
+      // 🔥 Fetch incoming ERC20 transfers
       do {
         const res = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
@@ -62,7 +63,7 @@ export default function Home() {
 
       setTotalTransfers(allTransfers.length)
 
-      // 🔥 Group by tx hash
+      // 🔥 Group transfers by transaction hash
       const txMap: Record<string, any[]> = {}
 
       for (const tx of allTransfers) {
@@ -81,11 +82,11 @@ export default function Home() {
         let incoming: any[] = []
 
         for (const t of transfers) {
-          if (!t.asset || !t.rawContract?.decimal) continue
+          if (!t.asset) continue
 
           const symbol = t.asset.toUpperCase()
 
-          // 🔥 Only count stablecoins + WETH
+          // 🔥 Only count stablecoins + WETH (Base)
           if (
             symbol !== "USDC" &&
             symbol !== "USDBC" &&
@@ -102,20 +103,16 @@ export default function Home() {
           }
         }
 
-        // 🔥 Swap pattern: at least 1 out + 1 in
+        // 🔥 Swap pattern: at least 1 outgoing + 1 incoming
         if (outgoing.length > 0 && incoming.length > 0) {
           swapCount++
 
           for (const out of outgoing) {
-            const decimals = Number(out.rawContract.decimal)
-            const amount = Number(out.value)
+            const actual = Number(out.value)
 
-            if (isNaN(amount)) continue
+            if (isNaN(actual) || actual < 1) continue // ignore dust
 
-            const actual = amount / Math.pow(10, decimals)
             const symbol = out.asset?.toUpperCase()
-
-            if (actual < 1) continue // ignore dust
 
             if (symbol === "WETH") {
               totalVolume += actual * ETH_PRICE
@@ -129,6 +126,7 @@ export default function Home() {
       setSwapTxCount(swapCount)
       setVolumeUSD(totalVolume)
 
+      // 🐋 Categorization
       if (totalVolume > 100000) {
         setCategory("Whale 🐋")
       } else if (totalVolume > 10000) {
