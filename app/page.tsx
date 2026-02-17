@@ -18,7 +18,7 @@ function categorizeVolume(volumeUSD: number) {
   return "Big Whale 🐳";
 }
 
-// Fetch wallet transactions from last 1.5 years + Uniswap V3 swaps
+// Fetch wallet transactions from last 1.5 years
 async function fetchWalletTransactions(address: string) {
   const currentBlock = await alchemy.core.getBlockNumber();
   const blocksPerYear = 2102400; // ~1 year ETH blocks
@@ -76,8 +76,8 @@ export default function BaseWhaleChecker() {
       const category = categorizeVolume(volumeUSD);
 
       setResult({
-        detectedSwaps: transactions.length,
-        estimatedVolumeUSD: volumeUSD,
+        totalTransactions: transactions.length,
+        totalVolumeUSD: volumeUSD,
         category,
       });
     } catch (err) {
@@ -105,13 +105,13 @@ export default function BaseWhaleChecker() {
         disabled={loading}
         className="bg-blue-500 text-white p-2 rounded mb-4"
       >
-        {loading ? "Analyzing..." : "Analyze Swaps"}
+        {loading ? "Analyzing..." : "Analyze Wallet"}
       </button>
 
       {result && (
         <div className="bg-gray-100 p-4 rounded">
-          <p>Detected Swaps: {result.detectedSwaps}</p>
-          <p>Estimated Volume (USD): ${result.estimatedVolumeUSD.toLocaleString()}</p>
+          <p>Total Transactions: {result.totalTransactions}</p>
+          <p>Total Volume (USD): ${result.totalVolumeUSD.toLocaleString()}</p>
           <p>Category: {result.category}</p>
         </div>
       )}
