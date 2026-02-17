@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network } from "alchemy-sdk"
+import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_RPC?.split("/v2/")[1],
@@ -12,8 +12,7 @@ const alchemy = new Alchemy(config)
 
 // 🔥 Uniswap / DEX Routers list (Base chain)
 const DEX_ROUTERS = [
-  "0x1f98431c8ad98523631ae4a59f267346ea31f984", // Example Uniswap router
-  // Add other Base DEX router addresses here in lowercase
+  "0x1f98431c8ad98523631ae4a59f267346ea31f984",
 ].map((addr) => addr.toLowerCase())
 
 export default function Home() {
@@ -30,18 +29,17 @@ export default function Home() {
     try {
       const cleanAddress = address.toLowerCase()
 
-      // 1️⃣ Fetch all ERC20 transfers from wallet
+      // ✅ FIXED LINE HERE
       const transfers = await alchemy.core.getAssetTransfers({
         fromBlock: "0x0",
         toBlock: "latest",
         fromAddress: cleanAddress,
-        category: ["erc20"],
+        category: [AssetTransfersCategory.ERC20], // 🔥 FIX
         withMetadata: true,
       })
 
       const txs = transfers.transfers
 
-      // 2️⃣ Filter only DEX router trades
       const dexTxs = txs.filter((tx: any) => {
         const toAddr = tx.to?.toLowerCase()
         return DEX_ROUTERS.includes(toAddr)
@@ -57,13 +55,11 @@ export default function Home() {
         const rawValue = Number(tx.rawContract?.value || 0)
         const tokenAmount = rawValue / Math.pow(10, tokenDecimals)
 
-        // Convert token to USD
         let usdValue = tokenAmount
-        // For simplicity, USDC or USDT directly add (can extend to fetch USD prices)
+
         if (tokenAddress === "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913") {
           usdValue = tokenAmount
         } else {
-          // For other tokens, fetch price via Coingecko
           try {
             const priceRes = await fetch(
               `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${tokenAddress}&vs_currencies=usd`
@@ -80,7 +76,6 @@ export default function Home() {
 
       setVolumeUSD(totalUSD)
 
-      // 🐋 Category Logic
       if (dexTxs.length > 500 && totalUSD > 100000) {
         setCategory("Whale 🐋")
       } else if (dexTxs.length > 200 || totalUSD > 10000) {
@@ -122,7 +117,7 @@ export default function Home() {
         <h2>📊 Full Base DEX Activity</h2>
         <p>Address: {address}</p>
         <p>Total Transactions: {txCount}</p>
-        <p>Estimated DEX ETH Volume (USD): ${volumeUSD.toFixed(2)}</p>
+        <p>Estimated DEX Volume (USD): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
     </main>
