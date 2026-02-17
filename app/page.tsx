@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
+import { Alchemy, Network } from "alchemy-sdk"
+import { ethers } from "ethers"
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
@@ -10,13 +11,15 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
-// Temporary fixed ETH price (can upgrade later)
+// Uniswap V3 Swap event signature
+const SWAP_TOPIC =
+  "0xc42079f94a6350d7e6235f29174924f928f0b8b4f6eaf5e3e1a1f8c6f6e5c5f"
+
 const ETH_PRICE = 3000
 
 export default function Home() {
   const [address, setAddress] = useState("")
-  const [totalTransfers, setTotalTransfers] = useState(0)
-  const [swapTxCount, setSwapTxCount] = useState(0)
+  const [swapCount, setSwapCount] = useState(0)
   const [volumeUSD, setVolumeUSD] = useState(0)
   const [category, setCategory] = useState("Shrimp 🦐")
   const [loading, setLoading] = useState(false)
@@ -26,107 +29,40 @@ export default function Home() {
     setLoading(true)
 
     try {
-      let pageKey: string | undefined = undefined
-      let allTransfers: any[] = []
+      const history = await alchemy.core.getAssetTransfers({
+        fromBlock: "0x0",
+        toBlock: "latest",
+        fromAddress: address,
+        category: ["external"],
+        maxCount: "0x3e8",
+      })
 
-      // 🔥 Fetch outgoing ERC20 transfers
-      do {
-        const res = await alchemy.core.getAssetTransfers({
-          fromBlock: "0x0",
-          toBlock: "latest",
-          fromAddress: address,
-          category: [AssetTransfersCategory.ERC20],
-          withMetadata: true,
-          pageKey,
-        })
-
-        allTransfers.push(...res.transfers)
-        pageKey = res.pageKey
-      } while (pageKey)
-
-      pageKey = undefined
-
-      // 🔥 Fetch incoming ERC20 transfers
-      do {
-        const res = await alchemy.core.getAssetTransfers({
-          fromBlock: "0x0",
-          toBlock: "latest",
-          toAddress: address,
-          category: [AssetTransfersCategory.ERC20],
-          withMetadata: true,
-          pageKey,
-        })
-
-        allTransfers.push(...res.transfers)
-        pageKey = res.pageKey
-      } while (pageKey)
-
-      setTotalTransfers(allTransfers.length)
-
-      // 🔥 Group transfers by transaction hash
-      const txMap: Record<string, any[]> = {}
-
-      for (const tx of allTransfers) {
-        if (!tx.hash) continue
-        if (!txMap[tx.hash]) txMap[tx.hash] = []
-        txMap[tx.hash].push(tx)
-      }
-
+      let swaps = 0
       let totalVolume = 0
-      let swapCount = 0
 
-      for (const hash in txMap) {
-        const transfers = txMap[hash]
+      for (const tx of history.transfers) {
+        if (!tx.hash) continue
 
-        let outgoing: any[] = []
-        let incoming: any[] = []
+        const receipt = await alchemy.core.getTransactionReceipt(tx.hash)
+        if (!receipt || !receipt.logs) continue
 
-        for (const t of transfers) {
-          if (!t.asset) continue
+        for (const log of receipt.logs) {
+          if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
+            swaps++
 
-          const symbol = t.asset.toUpperCase()
+            // crude volume estimate from log data
+            const amountHex = log.data.slice(0, 66)
+            const amount = Number(ethers.BigNumber.from(amountHex).toString())
 
-          // 🔥 Only count stablecoins + WETH (Base)
-          if (
-            symbol !== "USDC" &&
-            symbol !== "USDBC" &&
-            symbol !== "DAI" &&
-            symbol !== "WETH"
-          ) continue
-
-          if (t.from?.toLowerCase() === address.toLowerCase()) {
-            outgoing.push(t)
-          }
-
-          if (t.to?.toLowerCase() === address.toLowerCase()) {
-            incoming.push(t)
-          }
-        }
-
-        // 🔥 Swap pattern: at least 1 outgoing + 1 incoming
-        if (outgoing.length > 0 && incoming.length > 0) {
-          swapCount++
-
-          for (const out of outgoing) {
-            const actual = Number(out.value)
-
-            if (isNaN(actual) || actual < 1) continue // ignore dust
-
-            const symbol = out.asset?.toUpperCase()
-
-            if (symbol === "WETH") {
-              totalVolume += actual * ETH_PRICE
-            } else {
-              totalVolume += actual
-            }
+            const ethAmount = amount / 1e18
+            totalVolume += ethAmount * ETH_PRICE
           }
         }
       }
 
-      setSwapTxCount(swapCount)
+      setSwapCount(swaps)
       setVolumeUSD(totalVolume)
 
-      // 🐋 Categorization
       if (totalVolume > 100000) {
         setCategory("Whale 🐋")
       } else if (totalVolume > 10000) {
@@ -138,7 +74,7 @@ export default function Home() {
       }
 
     } catch (err) {
-      console.error("Error analyzing wallet:", err)
+      console.error(err)
     }
 
     setLoading(false)
@@ -152,7 +88,7 @@ export default function Home() {
       color: "white",
       fontFamily: "Arial",
     }}>
-      <h1>🐋 Base Whale Engine (Stable USD Mode)</h1>
+      <h1>🐋 Base Real Swap Detector</h1>
 
       <input
         style={{
@@ -181,14 +117,13 @@ export default function Home() {
           cursor: "pointer",
         }}
       >
-        {loading ? "Analyzing..." : "Analyze Wallet"}
+        {loading ? "Scanning swaps..." : "Analyze Swaps"}
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Stable Swap Detection</h2>
-        <p>Total ERC20 Transfers: {totalTransfers}</p>
-        <p>Detected Swap Transactions: {swapTxCount}</p>
-        <p>Estimated Trading Volume (USD): ${volumeUSD.toFixed(2)}</p>
+        <h2>📊 Real Swap Detection</h2>
+        <p>Detected Swaps: {swapCount}</p>
+        <p>Estimated Volume (USD): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
     </main>
