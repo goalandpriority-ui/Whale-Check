@@ -10,13 +10,6 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
-// 🔥 Known Base token addresses (lowercase)
-const TOKENS = {
-  USDC: "0x833589fcd6edb6e08f4c7c4e6e9b1e9f0e4b8b1f",
-  WETH: "0x4200000000000000000000000000000000000006",
-  DAI:  "0x50c5725949a6f0c72e6c4e3f3b2b9e7a1c5d6e7f",
-}
-
 const ETH_PRICE = 3000
 
 export default function Home() {
@@ -35,7 +28,7 @@ export default function Home() {
       let pageKey: string | undefined = undefined
       let allTransfers: any[] = []
 
-      // Outgoing
+      // 🔥 Fetch outgoing transfers
       do {
         const res = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
@@ -52,7 +45,7 @@ export default function Home() {
 
       pageKey = undefined
 
-      // Incoming
+      // 🔥 Fetch incoming transfers
       do {
         const res = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
@@ -69,6 +62,7 @@ export default function Home() {
 
       setTotalTransfers(allTransfers.length)
 
+      // 🔥 Group by tx hash
       const txMap: Record<string, any[]> = {}
 
       for (const tx of allTransfers) {
@@ -87,15 +81,16 @@ export default function Home() {
         let incoming: any[] = []
 
         for (const t of transfers) {
-          if (!t.rawContract?.address) continue
+          if (!t.asset || !t.rawContract?.decimal) continue
 
-          const tokenAddress = t.rawContract.address.toLowerCase()
+          const symbol = t.asset.toUpperCase()
 
-          // Only consider stablecoins + WETH
+          // 🔥 Only count stablecoins + WETH
           if (
-            tokenAddress !== TOKENS.USDC &&
-            tokenAddress !== TOKENS.WETH &&
-            tokenAddress !== TOKENS.DAI
+            symbol !== "USDC" &&
+            symbol !== "USDBC" &&
+            symbol !== "DAI" &&
+            symbol !== "WETH"
           ) continue
 
           if (t.from?.toLowerCase() === address.toLowerCase()) {
@@ -107,19 +102,22 @@ export default function Home() {
           }
         }
 
+        // 🔥 Swap pattern: at least 1 out + 1 in
         if (outgoing.length > 0 && incoming.length > 0) {
           swapCount++
 
           for (const out of outgoing) {
             const decimals = Number(out.rawContract.decimal)
             const amount = Number(out.value)
+
             if (isNaN(amount)) continue
 
             const actual = amount / Math.pow(10, decimals)
+            const symbol = out.asset?.toUpperCase()
 
-            const tokenAddress = out.rawContract.address.toLowerCase()
+            if (actual < 1) continue // ignore dust
 
-            if (tokenAddress === TOKENS.WETH) {
+            if (symbol === "WETH") {
               totalVolume += actual * ETH_PRICE
             } else {
               totalVolume += actual
@@ -142,7 +140,7 @@ export default function Home() {
       }
 
     } catch (err) {
-      console.error(err)
+      console.error("Error analyzing wallet:", err)
     }
 
     setLoading(false)
