@@ -10,7 +10,6 @@ const config = {
 };
 const alchemy = new Alchemy(config);
 
-// Volume based category
 function categorizeVolume(volumeUSD: number) {
   if (volumeUSD < 1000) return "Shrimp 🦐";
   if (volumeUSD < 10000) return "Dolphin 🐬";
@@ -18,7 +17,6 @@ function categorizeVolume(volumeUSD: number) {
   return "Big Whale 🐳";
 }
 
-// Fetch all wallet transactions using Alchemy
 async function fetchWalletTransactions(address: string) {
   let pageKey: string | undefined = undefined;
   let allTransactions: any[] = [];
@@ -36,17 +34,15 @@ async function fetchWalletTransactions(address: string) {
       maxCount: 1000,
       pageKey,
     });
-
-    allTransactions = allTransactions.concat(response.transfers || []);
+    allTransactions = allTransactions.concat(response.transfers);
     pageKey = response.pageKey;
   } while (pageKey);
 
   return allTransactions;
 }
 
-// Calculate total USD volume from transactions
 function calculateVolumeUSD(transactions: any[]) {
-  const ETH_PRICE = 1800; // example ETH price
+  const ETH_PRICE = 1800;
   let totalVolume = 0;
 
   transactions.forEach((tx) => {
@@ -66,7 +62,6 @@ export default function BaseWhaleChecker() {
   const handleAnalyze = async () => {
     if (!walletAddress) return;
     setLoading(true);
-    setResult(null);
     try {
       const transactions = await fetchWalletTransactions(walletAddress);
       const totalVolumeUSD = calculateVolumeUSD(transactions);
@@ -78,7 +73,7 @@ export default function BaseWhaleChecker() {
         category,
       });
     } catch (err) {
-      console.error("Error fetching wallet data:", err);
+      console.error(err);
       setResult(null);
     } finally {
       setLoading(false);
@@ -88,7 +83,6 @@ export default function BaseWhaleChecker() {
   return (
     <div className="p-4 max-w-md mx-auto">
       <h1 className="text-xl font-bold mb-4">🐋 Base Whale Checker</h1>
-
       <input
         type="text"
         value={walletAddress}
@@ -96,7 +90,6 @@ export default function BaseWhaleChecker() {
         placeholder="0x..."
         className="border p-2 w-full mb-2"
       />
-
       <button
         onClick={handleAnalyze}
         disabled={loading}
