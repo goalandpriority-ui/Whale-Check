@@ -12,8 +12,8 @@ const alchemy = new Alchemy(config)
 
 export default function Home() {
   const [address, setAddress] = useState("")
-  const [totalTx, setTotalTx] = useState(0)
-  const [erc20Tx, setErc20Tx] = useState(0)
+  const [totalTransfers, setTotalTransfers] = useState(0)
+  const [swapTxCount, setSwapTxCount] = useState(0)
   const [volumeUSD, setVolumeUSD] = useState(0)
   const [category, setCategory] = useState("Shrimp 🦐")
   const [loading, setLoading] = useState(false)
@@ -30,7 +30,7 @@ export default function Home() {
         const response = await alchemy.core.getAssetTransfers({
           fromBlock: "0x0",
           toBlock: "latest",
-          fromAddress: address,
+          address: address,
           category: [AssetTransfersCategory.ERC20],
           withMetadata: true,
           pageKey,
@@ -40,28 +40,67 @@ export default function Home() {
         pageKey = response.pageKey
       } while (pageKey)
 
-      setTotalTx(allTransfers.length)
-      setErc20Tx(allTransfers.length)
+      setTotalTransfers(allTransfers.length)
 
-      let totalVolume = 0
+      // 🔥 Group by transaction hash
+      const txMap: Record<string, any[]> = {}
 
       for (const tx of allTransfers) {
-        if (!tx.rawContract?.decimal) continue
-        if (!tx.value) continue
-
-        const decimals = Number(tx.rawContract.decimal)
-        const amount = Number(tx.value)
-
-        if (isNaN(amount)) continue
-
-        const actualAmount = amount / Math.pow(10, decimals)
-
-        // Ignore dust transfers (< $1 approx)
-        if (actualAmount < 1) continue
-
-        totalVolume += actualAmount
+        if (!tx.hash) continue
+        if (!txMap[tx.hash]) {
+          txMap[tx.hash] = []
+        }
+        txMap[tx.hash].push(tx)
       }
 
+      let totalVolume = 0
+      let swapCount = 0
+
+      for (const hash in txMap) {
+        const transfers = txMap[hash]
+
+        let outgoing: any[] = []
+        let incoming: any[] = []
+
+        for (const t of transfers) {
+          if (!t.rawContract?.decimal) continue
+          if (!t.value) continue
+
+          if (t.from?.toLowerCase() === address.toLowerCase()) {
+            outgoing.push(t)
+          }
+
+          if (t.to?.toLowerCase() === address.toLowerCase()) {
+            incoming.push(t)
+          }
+        }
+
+        // 🔥 Swap pattern: at least 1 out + 1 in
+        if (outgoing.length > 0 && incoming.length > 0) {
+          swapCount++
+
+          // Take largest outgoing as trade size
+          let largest = 0
+
+          for (const out of outgoing) {
+            const decimals = Number(out.rawContract.decimal)
+            const amount = Number(out.value)
+            if (isNaN(amount)) continue
+
+            const actual = amount / Math.pow(10, decimals)
+
+            if (actual > largest) {
+              largest = actual
+            }
+          }
+
+          if (largest > 1) { // ignore dust
+            totalVolume += largest
+          }
+        }
+      }
+
+      setSwapTxCount(swapCount)
       setVolumeUSD(totalVolume)
 
       if (totalVolume > 100000) {
@@ -91,7 +130,7 @@ export default function Home() {
         fontFamily: "Arial",
       }}
     >
-      <h1>🐋 Base Whale Engine (Smart ERC20 Mode)</h1>
+      <h1>🐋 Base Whale Engine (Smart Swap Pattern Mode)</h1>
 
       <input
         style={{
@@ -124,8 +163,9 @@ export default function Home() {
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Smart ERC20 Activity</h2>
-        <p>Total ERC20 Transfers: {erc20Tx}</p>
+        <h2>📊 Smart Swap Detection</h2>
+        <p>Total ERC20 Transfers: {totalTransfers}</p>
+        <p>Detected Swap Transactions: {swapTxCount}</p>
         <p>Estimated Trading Volume (Token Units): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
