@@ -1,67 +1,59 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk";
-import { ethers } from "ethers";
+'use client'
 
-const config = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
-  network: Network.ETH_MAINNET, // Base chain API key use pannunga
-};
+import { useState } from "react";
 
-const alchemy = new Alchemy(config);
+export default function BaseWhaleChecker() {
+  const [walletAddress, setWalletAddress] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-function categorizeVolume(volumeUSD: number) {
-  if (volumeUSD < 1000) return "Shrimp 🦐";
-  if (volumeUSD < 10000) return "Dolphin 🐬";
-  if (volumeUSD < 100000) return "Whale 🐋";
-  return "Big Whale 🐳";
-}
+  const handleAnalyze = async () => {
+    if (!walletAddress) return;
+    setLoading(true);
+    setResult(null);
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const { address } = req.query;
-    if (!address || typeof address !== "string") {
-      return res.status(400).json({ error: "Wallet address is required" });
+    try {
+      const res = await fetch(`/api/analyze?address=${walletAddress}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        setResult(data);
+      } else {
+        alert(data.error || "Failed to fetch wallet transactions");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch wallet transactions. Check console for details.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    let pageKey: string | undefined = undefined;
-    let allTransactions: any[] = [];
+  return (
+    <div className="p-4 max-w-md mx-auto">
+      <h1 className="text-xl font-bold mb-4">🐋 Base Whale Checker</h1>
+      <input
+        type="text"
+        value={walletAddress}
+        onChange={(e) => setWalletAddress(e.target.value)}
+        placeholder="0x..."
+        className="border p-2 w-full mb-2"
+      />
+      <button
+        onClick={handleAnalyze}
+        disabled={loading}
+        className="bg-blue-500 text-white p-2 rounded mb-4 w-full"
+      >
+        {loading ? "Analyzing..." : "Analyze Wallet"}
+      </button>
 
-    do {
-      const response = await alchemy.transfers.getAssetTransfers({
-        fromBlock: "0x0",
-        fromAddress: address,
-        category: [
-          AssetTransfersCategory.EXTERNAL,
-          AssetTransfersCategory.INTERNAL,
-          AssetTransfersCategory.ERC20,
-          AssetTransfersCategory.ERC721,
-        ],
-        maxCount: 100,
-        pageKey,
-      });
-
-      allTransactions = allTransactions.concat(response.transfers);
-      pageKey = response.pageKey;
-    } while (pageKey);
-
-    // Calculate USD volume
-    const ETH_PRICE = 1800; // Example price, optionally fetch live
-    let totalVolumeUSD = 0;
-    allTransactions.forEach((tx) => {
-      if (!tx.value) return;
-      const amount = Number(ethers.formatEther(tx.value || "0"));
-      totalVolumeUSD += amount * ETH_PRICE;
-    });
-
-    const category = categorizeVolume(totalVolumeUSD);
-
-    res.status(200).json({
-      totalTransactions: allTransactions.length,
-      totalVolumeUSD,
-      category,
-    });
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch wallet transactions" });
-  }
+      {result && (
+        <div className="bg-gray-100 p-4 rounded">
+          <p>Total Transactions: {result.totalTransactions}</p>
+          <p>Total Volume (USD): ${result.totalVolumeUSD.toLocaleString()}</p>
+          <p>Category: {result.category}</p>
+        </div>
+      )}
+    </div>
+  );
 }
