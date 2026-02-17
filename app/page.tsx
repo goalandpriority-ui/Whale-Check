@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
+import { Alchemy, Network } from "alchemy-sdk"
+import { ethers } from "ethers"
 
 const config = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
+  apiKey: process.env.ALCHEMY_KEY!, // ungaloda environment variable
   network: Network.BASE_MAINNET,
 }
 
@@ -28,18 +29,27 @@ export default function Home() {
     setLoading(true)
 
     try {
-      const history = await alchemy.core.getAssetTransfers({
-        fromBlock: "0x0",
-        toBlock: "latest",
-        fromAddress: address,
-        category: [AssetTransfersCategory.EXTERNAL], // ✅ fixed
-        maxCount: 1000, // ✅ fixed (number not string)
-      })
+      let allTransfers: any[] = []
+      let pageKey: string | undefined = undefined
+
+      do {
+        const response = await alchemy.core.getAssetTransfers({
+          fromBlock: "0x0",
+          toBlock: "latest",
+          fromAddress: address,
+          category: ["external", "erc20", "erc721", "erc1155"],
+          maxCount: "0x3e8", // 1000 per request
+          pageKey: pageKey,
+        })
+
+        allTransfers.push(...response.transfers)
+        pageKey = response.pageKey
+      } while (pageKey)
 
       let swaps = 0
       let totalVolume = 0
 
-      for (const tx of history.transfers) {
+      for (const tx of allTransfers) {
         if (!tx.hash) continue
 
         const receipt = await alchemy.core.getTransactionReceipt(tx.hash)
@@ -49,9 +59,9 @@ export default function Home() {
           if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
             swaps++
 
-            // ✅ removed ethers.BigNumber (v6 issue)
+            // crude volume estimate from log data
             const amountHex = log.data.slice(0, 66)
-            const amount = parseInt(amountHex, 16)
+            const amount = Number(ethers.BigNumber.from(amountHex).toString())
 
             const ethAmount = amount / 1e18
             totalVolume += ethAmount * ETH_PRICE
