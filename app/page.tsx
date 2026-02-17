@@ -10,11 +10,6 @@ const config = {
 
 const alchemy = new Alchemy(config)
 
-// 🔥 Uniswap / DEX Routers list (Base chain)
-const DEX_ROUTERS = [
-  "0x1f98431c8ad98523631ae4a59f267346ea31f984",
-].map((addr) => addr.toLowerCase())
-
 export default function Home() {
   const [address, setAddress] = useState("")
   const [txCount, setTxCount] = useState(0)
@@ -29,46 +24,40 @@ export default function Home() {
     try {
       const cleanAddress = address.toLowerCase()
 
-      // ✅ FIXED LINE HERE
+      // ✅ Fetch ALL ERC20 transfers
       const transfers = await alchemy.core.getAssetTransfers({
         fromBlock: "0x0",
         toBlock: "latest",
         fromAddress: cleanAddress,
-        category: [AssetTransfersCategory.ERC20], // 🔥 FIX
+        category: [AssetTransfersCategory.ERC20],
         withMetadata: true,
       })
 
       const txs = transfers.transfers
 
-      const dexTxs = txs.filter((tx: any) => {
-        const toAddr = tx.to?.toLowerCase()
-        return DEX_ROUTERS.includes(toAddr)
-      })
-
-      setTxCount(dexTxs.length)
+      setTxCount(txs.length)
 
       let totalUSD = 0
 
-      for (const tx of dexTxs as any[]) {
+      for (const tx of txs as any[]) {
         const tokenAddress = tx.rawContract?.address?.toLowerCase()
         const tokenDecimals = Number(tx.rawContract?.decimals || 18)
         const rawValue = Number(tx.rawContract?.value || 0)
+
+        if (!rawValue) continue
+
         const tokenAmount = rawValue / Math.pow(10, tokenDecimals)
 
-        let usdValue = tokenAmount
+        let usdValue = 0
 
-        if (tokenAddress === "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913") {
-          usdValue = tokenAmount
-        } else {
-          try {
-            const priceRes = await fetch(
-              `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${tokenAddress}&vs_currencies=usd`
-            )
-            const priceData = await priceRes.json()
-            usdValue = tokenAmount * (priceData[tokenAddress]?.usd || 0)
-          } catch {
-            usdValue = 0
-          }
+        try {
+          const priceRes = await fetch(
+            `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${tokenAddress}&vs_currencies=usd`
+          )
+          const priceData = await priceRes.json()
+          usdValue = tokenAmount * (priceData[tokenAddress]?.usd || 0)
+        } catch {
+          usdValue = 0
         }
 
         totalUSD += usdValue
@@ -76,11 +65,12 @@ export default function Home() {
 
       setVolumeUSD(totalUSD)
 
-      if (dexTxs.length > 500 && totalUSD > 100000) {
+      // 🐋 Category Logic
+      if (txs.length > 500 && totalUSD > 100000) {
         setCategory("Whale 🐋")
-      } else if (dexTxs.length > 200 || totalUSD > 10000) {
+      } else if (txs.length > 200 || totalUSD > 10000) {
         setCategory("Shark 🦈")
-      } else if (dexTxs.length > 50 || totalUSD > 1000) {
+      } else if (txs.length > 50 || totalUSD > 1000) {
         setCategory("Dolphin 🐬")
       } else {
         setCategory("Shrimp 🦐")
@@ -95,7 +85,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: "40px", background: "black", minHeight: "100vh", color: "white" }}>
-      <h1>🐋 Base Whale Engine (DEX-only Mode)</h1>
+      <h1>🐋 Base Whale Engine (ERC20 Mode)</h1>
 
       <input
         style={{ padding: "10px", width: "400px", marginTop: "20px" }}
@@ -114,10 +104,10 @@ export default function Home() {
       </button>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>📊 Full Base DEX Activity</h2>
+        <h2>📊 Full ERC20 Activity</h2>
         <p>Address: {address}</p>
-        <p>Total Transactions: {txCount}</p>
-        <p>Estimated DEX Volume (USD): ${volumeUSD.toFixed(2)}</p>
+        <p>Total ERC20 Transactions: {txCount}</p>
+        <p>Estimated ERC20 Volume (USD): ${volumeUSD.toFixed(2)}</p>
         <p>Category: {category}</p>
       </div>
     </main>
