@@ -2,16 +2,15 @@
 
 import { useState } from "react"
 import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk"
-import { BigNumber, ethers } from "ethers"
+import { ethers } from "ethers"
 
 const config = {
-  apiKey: process.env.ALCHEMY_KEY!, // macha, environment variable direct ALCHEMY_KEY
+  apiKey: process.env.ALCHEMY_KEY!,
   network: Network.BASE_MAINNET,
 }
 
 const alchemy = new Alchemy(config)
 
-// Uniswap V3 Swap event signature
 const SWAP_TOPIC =
   "0xc42079f94a6350d7e6235f29174924f928f0b8b4f6eaf5e3e1a1f8c6f6e5c5f"
 
@@ -32,7 +31,7 @@ export default function Home() {
       let allTransfers: any[] = []
       let pageKey: string | undefined = undefined
       let fetchedTx = 0
-      const maxFetch = 1000 // macha, max 1000 transactions per request
+      const maxFetch = 1000
 
       do {
         const response = await alchemy.core.getAssetTransfers({
@@ -46,7 +45,7 @@ export default function Home() {
             AssetTransfersCategory.ERC1155,
           ],
           pageKey,
-          maxCount: 1000, // number fix, not string
+          maxCount: 1000,
         })
 
         allTransfers.push(...response.transfers)
@@ -68,9 +67,8 @@ export default function Home() {
           if (log.topics[0]?.toLowerCase() === SWAP_TOPIC) {
             swaps++
 
-            // crude volume estimate
             const amountHex = log.data.slice(0, 66)
-            const amount = BigNumber.from(amountHex)
+            const amount = BigInt(amountHex)
             const ethAmount = Number(ethers.formatUnits(amount, 18))
             totalVolume += ethAmount * ETH_PRICE
           }
@@ -80,15 +78,10 @@ export default function Home() {
       setSwapCount(swaps)
       setVolumeUSD(totalVolume)
 
-      if (totalVolume > 100000) {
-        setCategory("Whale 🐋")
-      } else if (totalVolume > 10000) {
-        setCategory("Shark 🦈")
-      } else if (totalVolume > 1000) {
-        setCategory("Dolphin 🐬")
-      } else {
-        setCategory("Shrimp 🦐")
-      }
+      if (totalVolume > 100000) setCategory("Whale 🐋")
+      else if (totalVolume > 10000) setCategory("Shark 🦈")
+      else if (totalVolume > 1000) setCategory("Dolphin 🐬")
+      else setCategory("Shrimp 🦐")
     } catch (err) {
       console.error(err)
     }
