@@ -1,15 +1,23 @@
-import { createConfig, http } from 'wagmi'
-import { base } from 'wagmi/chains'
-import { walletConnect } from 'wagmi/connectors'
+// lib/wagmi.ts
+'use client'
 
-export const config = createConfig({
-  chains: [base],
+import { createConfig, configureChains, WagmiConfig } from 'wagmi'
+import { base } from 'wagmi/chains'
+import { walletConnect } from '@wagmi/connectors'
+import { publicProvider } from 'wagmi/providers/public'
+
+const { chains, publicClient } = configureChains(
+  [base],
+  [publicProvider()]
+)
+
+export const wagmiConfig = createConfig({
+  autoConnect: true,
   connectors: [
     walletConnect({
-      projectId: 'c56357101a152b811310071d8366d90',
+      chains,
+      projectId: 'c56357101a152bXXXXXX', // WalletConnect Project ID
     }),
   ],
-  transports: {
-    [base.id]: http(),
-  },
+  publicClient,
 })
