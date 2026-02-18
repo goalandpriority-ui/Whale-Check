@@ -1,25 +1,30 @@
-'use client'
-
-import { createConfig, configureChains, mainnet, WagmiConfig } from 'wagmi'
+import { configureChains, createConfig } from 'wagmi'
+import { mainnet, goerli } from 'wagmi/chains'
 import { publicProvider } from 'wagmi/providers/public'
-import { MetaMaskConnector } from '@wagmi/core/connectors/metaMask'
-import { CoinbaseWalletConnector } from '@wagmi/core/connectors/coinbaseWallet'
-import { InjectedConnector } from '@wagmi/core/connectors/injected'
+import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
+import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
+import { InjectedConnector } from 'wagmi/connectors/injected'
 
-// Configure chains & providers
+// 1️⃣ Chains setup
 const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [mainnet],
+  [mainnet, goerli],
   [publicProvider()]
 )
 
-// Create wagmi config
+// 2️⃣ Connectors
+const connectors = [
+  new MetaMaskConnector({ chains }),
+  new CoinbaseWalletConnector({
+    chains,
+    options: { appName: 'Base Whale Check' }
+  }),
+  new InjectedConnector({ chains })
+]
+
+// 3️⃣ Export wagmiConfig
 export const wagmiConfig = createConfig({
   autoConnect: true,
-  connectors: [
-    new MetaMaskConnector({ chains }),
-    new CoinbaseWalletConnector({ chains, options: { appName: 'Base Whale Check' } }),
-    new InjectedConnector({ chains }),
-  ],
+  connectors,
   publicClient,
-  webSocketPublicClient,
+  webSocketPublicClient
 })
