@@ -14,14 +14,6 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Category function based on final score
-  const getCategory = (score: number) => {
-    if (score <= 5) return "🦐 Shrimp";
-    if (score <= 10) return "🐬 Dolphin";
-    if (score <= 15) return "🐳 Whale";
-    return "🐋 Big Whale";
-  };
-
   const analyzeWallet = async () => {
     setError("");
     setWalletData(null);
@@ -38,14 +30,10 @@ export default function Page() {
       if (!res.ok) throw new Error("Failed to fetch wallet data");
       const data = await res.json();
 
-      // Calculate final score: simple example (volumeUSD/1000 + txCount/1000)
-      const finalScore = data.totalVolumeUSD / 1000 + data.totalTxCount / 1000;
-      const category = getCategory(finalScore);
-
       setWalletData({
         totalTxCount: data.totalTxCount,
         totalVolumeUSD: data.totalVolumeUSD,
-        category,
+        category: data.category,
       });
     } catch (err: any) {
       setError(err.message || "Something went wrong");
