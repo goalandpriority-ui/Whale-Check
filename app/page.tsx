@@ -1,12 +1,7 @@
-import WalletAnalyzer from '../components/WalletAnalyzer'
-import { Providers } from './providers'
+'use client'
+import { WagmiConfig } from 'wagmi'
+import { wagmiConfig } from '../lib/wagmi'
 
-export default function Home() {
-  return (
-    <Providers>
-      <div className="flex justify-center items-center min-h-screen bg-gray-800">
-        <WalletAnalyzer />
-      </div>
-    </Providers>
-  )
+export function Providers({ children }: { children: React.ReactNode }) {
+  return <WagmiConfig config={wagmiConfig}>{children}</WagmiConfig>
 }
