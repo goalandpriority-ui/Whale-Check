@@ -9,14 +9,14 @@ export default function WalletAnalyzer() {
   const { connect } = useConnect({
     connector: new WalletConnectConnector({
       chains: [wagmiConfig.connectors[0].chains[0]],
-      options: { projectId: 'c56357101a152bXXXXXX' },
+      options: { projectId: 'c56357101a152bXXXXXX' }, // WalletConnect project ID
     }),
   })
 
   const { address, isConnected } = useAccount()
   const { data: balance } = useBalance({ address })
 
-  // 🐋 Whale Levels
+  // 🐋 Whale Levels logic
   let level = 'Shrimp'
   if (balance && parseFloat(balance.formatted) > 10) level = 'Dolphin'
   if (balance && parseFloat(balance.formatted) > 50) level = 'Whale'
