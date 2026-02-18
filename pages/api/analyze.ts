@@ -15,57 +15,50 @@ export default async function handler(
 
     const apiKey = process.env.BASESCAN_API_KEY;
 
-    // 1️⃣ Normal Transactions
+    // 🔹 Normal Transactions
     const normal = await fetch(
       `${BASESCAN_API}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
     ).then(r => r.json());
 
-    // 2️⃣ Internal Transactions
+    // 🔹 Internal Transactions
     const internal = await fetch(
       `${BASESCAN_API}?module=account&action=txlistinternal&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
     ).then(r => r.json());
 
-    // Combine both
+    // 🔹 ERC20 Token Transfers (proxy for trading)
+    const token = await fetch(
+      `${BASESCAN_API}?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
+    ).then(r => r.json());
+
     const normalTx = normal.status === "1" ? normal.result : [];
     const internalTx = internal.status === "1" ? internal.result : [];
+    const tokenTx = token.status === "1" ? token.result : [];
 
-    const allTx = [...normalTx, ...internalTx];
+    // 🎯 Final Score Calculation
+    const finalScore =
+      normalTx.length * 1 +
+      internalTx.length * 1 +
+      tokenTx.length * 2;
 
-    if (allTx.length === 0) {
-      return res.status(200).json({
-        address,
-        totalVolumeETH: 0,
-        category: "🦐 Shrimp",
-        transactionCount: 0,
-        transactions: [],
-      });
-    }
-
-    // 🔥 Calculate ETH volume
-    let totalVolume = 0;
-
-    allTx.forEach((tx: any) => {
-      const valueETH = Number(tx.value) / 1e18;
-      totalVolume += valueETH;
-    });
-
-    // 🐋 Category Logic (Your Range)
+    // 🐋 Category Logic
     let category = "🦐 Shrimp";
 
-    if (totalVolume >= 5) {
+    if (finalScore >= 15) {
       category = "🐋 Big Whale";
-    } else if (totalVolume >= 3) {
+    } else if (finalScore >= 10) {
       category = "🐳 Whale";
-    } else if (totalVolume >= 1) {
+    } else if (finalScore >= 5) {
       category = "🐬 Dolphin";
     }
 
     return res.status(200).json({
       address,
-      totalVolumeETH: totalVolume.toFixed(4),
+      normalTxCount: normalTx.length,
+      internalTxCount: internalTx.length,
+      tokenTxCount: tokenTx.length,
+      finalScore,
       category,
-      transactionCount: allTx.length,
-      transactions: allTx.slice(-10).reverse(),
+      transactions: [...normalTx].slice(-10).reverse(),
     });
 
   } catch (error) {
