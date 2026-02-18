@@ -1,41 +1,15 @@
 // pages/api/analyze.ts
 import { NextApiRequest, NextApiResponse } from "next";
-import { ethers } from "ethers";
+import fetch from "node-fetch";
 
-const ALCHEMY_KEY = process.env.ALCHEMY_API_KEY;
-const BASE_RPC = process.env.NEXT_PUBLIC_BASE_RPC || "https://mainnet.base.org";
+const BASESCAN_API_KEY = process.env.NEXT_PUBLIC_BASESCAN_API_KEY;
+const ETH_PRICE = 2000; // replace with real-time API if needed
 
-const provider = new ethers.JsonRpcProvider(`${BASE_RPC}?apikey=${ALCHEMY_KEY}`);
-
-async function fetchNormalTxs(address: string) {
-  try {
-    const history = await provider.getHistory(address, 0, "latest");
-    return history;
-  } catch (err) {
-    console.error("Normal txs fetch error:", err);
-    return [];
-  }
-}
-
-async function fetchERC20Transfers(address: string) {
-  try {
-    // Using Alchemy ERC20 Transfers
-    const url = `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`;
-    // For simplicity, returning empty array; implement actual ERC20 fetch if needed
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-async function fetchInternalTxs(address: string) {
-  // Base mainnet internal txs via provider (optional)
-  return [];
-}
-
-async function fetchUniswapVolume(address: string) {
-  // Optional: fetch Uniswap V3 swaps using Alchemy / TheGraph
-  return 0;
+async function fetchTxs(address: string, type: string) {
+  const url = `https://api.basescan.org/api?module=account&action=${type}&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.result || [];
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -45,26 +19,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Address required" });
     }
 
-    const [normalTxs, internalTxs, erc20Txs, uniswapVolumeUSD] = await Promise.all([
-      fetchNormalTxs(address),
-      fetchInternalTxs(address),
-      fetchERC20Transfers(address),
-      fetchUniswapVolume(address),
+    const [normalTxs, internalTxs, erc20Txs] = await Promise.all([
+      fetchTxs(address, "txlist"),
+      fetchTxs(address, "txlistinternal"),
+      fetchTxs(address, "tokentx"),
     ]);
 
     const totalTxCount = normalTxs.length + internalTxs.length + erc20Txs.length;
 
-    // Total USD volume (ETH value only)
     let totalVolumeUSD = 0;
-    const ETH_PRICE = 2000; // replace with real-time fetch if needed
+    normalTxs.forEach((tx: any) => totalVolumeUSD += parseFloat(tx.value) / 1e18 * ETH_PRICE);
+    internalTxs.forEach((tx: any) => totalVolumeUSD += parseFloat(tx.value) / 1e18 * ETH_PRICE);
+    erc20Txs.forEach((tx: any) => totalVolumeUSD += parseFloat(tx.value) / 1e18 * ETH_PRICE);
 
-    normalTxs.forEach((tx: any) => {
-      totalVolumeUSD += parseFloat(ethers.formatEther(tx.value)) * ETH_PRICE;
-    });
-
-    totalVolumeUSD += uniswapVolumeUSD;
-
-    // Determine category based on totalTxCount
+    // Category calculation
     let category = "🦐 Shrimp";
     if (totalTxCount >= 5 && totalTxCount < 10) category = "🐬 Dolphin";
     else if (totalTxCount >= 10 && totalTxCount < 15) category = "🐳 Whale";
@@ -80,4 +48,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error(err);
     res.status(500).json({ error: err.message || "Something went wrong" });
   }
-}
+      }
