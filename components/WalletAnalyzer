@@ -1,60 +1,39 @@
+// components/WalletAnalyzer.tsx
 'use client'
 
-import { useState } from "react"
+import React, { useState } from 'react'
+import { useAccount, useBalance, useConnect } from 'wagmi'
+import { wagmiConfig } from '../lib/wagmi'
+import { WalletConnectConnector } from '@wagmi/connectors/walletConnect'
 
 export default function WalletAnalyzer() {
-  const [address, setAddress] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [totalTransfers, setTotalTransfers] = useState<number | null>(null)
-  const [error, setError] = useState("")
+  const { connect } = useConnect({
+    connector: new WalletConnectConnector({
+      chains: [wagmiConfig.chains[0]],
+      options: { projectId: 'c56357101a152bXXXXXX' },
+    }),
+  })
 
-  const analyzeWallet = async () => {
-    if (!address) return setError("Please enter a wallet address")
-    setError("")
-    setLoading(true)
-    setTotalTransfers(null)
-
-    try {
-      const res = await fetch(`/api/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address })
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setTotalTransfers(data.totalTransfers)
-      } else {
-        setError(data.error || "Something went wrong")
-      }
-    } catch (err) {
-      setError("Failed to fetch data")
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { address, isConnected } = useAccount()
+  const { data: balance } = useBalance({ address })
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <input
-        type="text"
-        value={address}
-        placeholder="Enter wallet address"
-        onChange={(e) => setAddress(e.target.value)}
-        style={{ padding: "8px", width: "300px" }}
-      />
-      <button
-        onClick={analyzeWallet}
-        style={{ padding: "8px 16px", marginLeft: "10px" }}
-        disabled={loading}
-      >
-        {loading ? "Analyzing..." : "Analyze Wallet"}
-      </button>
+    <div className="p-6 bg-gray-900 text-white rounded-lg w-96">
+      <h2 className="text-xl font-bold mb-4">🐋 Base Wallet Analyzer</h2>
 
-      {error && <p style={{ color: "red", marginTop: "20px" }}>{error}</p>}
-      {totalTransfers !== null && (
-        <p style={{ marginTop: "20px" }}>
-          Total ERC20 Transfers: {totalTransfers}
-        </p>
+      {!isConnected ? (
+        <button
+          onClick={() => connect()}
+          className="bg-blue-600 px-4 py-2 rounded"
+        >
+          Connect Wallet
+        </button>
+      ) : (
+        <div>
+          <p><strong>Wallet:</strong> {address}</p>
+          <p><strong>ETH Balance:</strong> {balance?.formatted} ETH</p>
+          <p className="mt-2">Check transactions & volume in future updates!</p>
+        </div>
       )}
     </div>
   )
