@@ -2,16 +2,14 @@
 
 import React from 'react'
 import { useAccount, useBalance, useConnect } from 'wagmi'
-import { WalletConnectConnector } from '@wagmi/connectors/walletConnect'
+import { WalletConnectConnector } from '@wagmi/connectors'
 import { wagmiConfig } from '../lib/wagmi'
 
 export default function WalletAnalyzer() {
   const { connect } = useConnect({
     connector: new WalletConnectConnector({
       chains: [wagmiConfig.connectors[0].chains[0]],
-      options: {
-        projectId: 'c56357101a152bXXXXXX', // Same WalletConnect Project ID
-      },
+      options: { projectId: 'c56357101a152bXXXXXX' },
     }),
   })
 
@@ -33,7 +31,6 @@ export default function WalletAnalyzer() {
         <div>
           <p><strong>Wallet:</strong> {address}</p>
           <p><strong>ETH Balance:</strong> {balance?.formatted} ETH</p>
-          <p className="mt-2 text-gray-300">Transaction history & USD volume coming soon!</p>
         </div>
       )}
     </div>
