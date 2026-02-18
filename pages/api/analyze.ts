@@ -1,68 +1,7 @@
-// pages/api/analyze.ts
-
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Alchemy, Network, AssetTransfersCategory } from "alchemy-sdk";
-import { ethers } from "ethers";
 
-// ✅ IMPORTANT: BASE_MAINNET
-const alchemy = new Alchemy({
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_KEY!,
-  network: Network.BASE_MAINNET,
-});
+const BASESCAN_API = "https://api.basescan.org/api";
 
-// Wallet Category
-function categorizeVolume(volumeUSD: number) {
-  if (volumeUSD < 1000) return "Shrimp 🦐";
-  if (volumeUSD < 10000) return "Dolphin 🐬";
-  if (volumeUSD < 100000) return "Whale 🐋";
-  return "Big Whale 🐳";
-}
-
-// Fetch transfers
-async function fetchWalletTransactions(address: string) {
-  let pageKey: string | undefined = undefined;
-  let allTransfers: any[] = [];
-
-  do {
-    const response = await alchemy.core.getAssetTransfers({
-      fromBlock: "0x0",
-      fromAddress: address,
-      category: [
-        AssetTransfersCategory.EXTERNAL,
-        AssetTransfersCategory.INTERNAL,
-        AssetTransfersCategory.ERC20,
-      ],
-      maxCount: 100,
-      pageKey,
-    });
-
-    allTransfers = allTransfers.concat(response.transfers);
-    pageKey = response.pageKey;
-  } while (pageKey);
-
-  return allTransfers;
-}
-
-// Calculate ETH volume
-function calculateVolumeUSD(transactions: any[]) {
-  const BASE_ETH_PRICE = 3000; // temporary static price
-  let totalVolume = 0;
-
-  transactions.forEach((tx) => {
-    if (!tx.value) return;
-
-    try {
-      const amount = Number(ethers.formatEther(tx.value));
-      totalVolume += amount * BASE_ETH_PRICE;
-    } catch {
-      return;
-    }
-  });
-
-  return totalVolume;
-}
-
-// API handler
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -70,24 +9,58 @@ export default async function handler(
   const { address } = req.query;
 
   if (!address || typeof address !== "string") {
-    return res.status(400).json({ error: "Wallet address is required" });
+    return res.status(400).json({ error: "Wallet address required" });
   }
 
   try {
-    const transfers = await fetchWalletTransactions(address);
-    const totalVolumeUSD = calculateVolumeUSD(transfers);
-    const category = categorizeVolume(totalVolumeUSD);
+    const apiKey = process.env.BASESCAN_API_KEY;
+
+    // Fetch normal transactions
+    const txRes = await fetch(
+      `${BASESCAN_API}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=100&sort=desc&apikey=${apiKey}`
+    );
+
+    const txData = await txRes.json();
+
+    if (txData.status !== "1") {
+      return res.status(200).json({
+        address,
+        totalVolumeETH: 0,
+        category: "No Activity",
+        transactions: []
+      });
+    }
+
+    let totalVolumeETH = 0;
+
+    txData.result.forEach((tx: any) => {
+      const valueETH = Number(tx.value) / 1e18; // wei → ETH
+      totalVolumeETH += valueETH;
+    });
+
+    // Whale Classification
+    let category = "Shrimp 🦐";
+
+    if (totalVolumeETH > 10000) {
+      category = "Blue Whale 🐋";
+    } else if (totalVolumeETH > 1000) {
+      category = "Whale 🐳";
+    } else if (totalVolumeETH > 100) {
+      category = "Shark 🦈";
+    } else if (totalVolumeETH > 10) {
+      category = "Dolphin 🐬";
+    }
 
     return res.status(200).json({
-      totalTransactions: transfers.length,
-      totalVolumeUSD,
+      address,
+      totalVolumeETH: totalVolumeETH.toFixed(4),
       category,
+      transactionCount: txData.result.length,
+      transactions: txData.result.slice(0, 10) // latest 10
     });
-  } catch (error: any) {
-    console.error("Alchemy Error:", error);
-    return res.status(500).json({
-      error: "Failed to fetch wallet transactions",
-      details: error.message,
-    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Something went wrong" });
   }
 }
