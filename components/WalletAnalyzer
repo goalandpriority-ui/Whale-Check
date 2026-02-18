@@ -16,6 +16,11 @@ export default function WalletAnalyzer() {
   const { address, isConnected } = useAccount()
   const { data: balance } = useBalance({ address })
 
+  let level = 'Shrimp'
+  if (balance && parseFloat(balance.formatted) > 10) level = 'Dolphin'
+  if (balance && parseFloat(balance.formatted) > 50) level = 'Whale'
+  if (balance && parseFloat(balance.formatted) > 200) level = 'Big Whale'
+
   return (
     <div className="p-6 bg-gray-900 text-white rounded-lg w-96">
       <h2 className="text-xl font-bold mb-4">🐋 Base Wallet Analyzer</h2>
@@ -31,6 +36,7 @@ export default function WalletAnalyzer() {
         <div>
           <p><strong>Wallet:</strong> {address}</p>
           <p><strong>ETH Balance:</strong> {balance?.formatted} ETH</p>
+          <p><strong>Level:</strong> {level}</p>
         </div>
       )}
     </div>
