@@ -15,13 +15,23 @@ export default async function handler(
 
     const apiKey = process.env.BASESCAN_API_KEY;
 
-    const response = await fetch(
+    // 1️⃣ Normal Transactions
+    const normal = await fetch(
       `${BASESCAN_API}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
-    );
+    ).then(r => r.json());
 
-    const data = await response.json();
+    // 2️⃣ Internal Transactions
+    const internal = await fetch(
+      `${BASESCAN_API}?module=account&action=txlistinternal&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`
+    ).then(r => r.json());
 
-    if (data.status !== "1") {
+    // Combine both
+    const normalTx = normal.status === "1" ? normal.result : [];
+    const internalTx = internal.status === "1" ? internal.result : [];
+
+    const allTx = [...normalTx, ...internalTx];
+
+    if (allTx.length === 0) {
       return res.status(200).json({
         address,
         totalVolumeETH: 0,
@@ -31,17 +41,15 @@ export default async function handler(
       });
     }
 
-    const transactions = data.result;
-
-    // 🔥 Calculate total ETH volume
+    // 🔥 Calculate ETH volume
     let totalVolume = 0;
 
-    transactions.forEach((tx: any) => {
+    allTx.forEach((tx: any) => {
       const valueETH = Number(tx.value) / 1e18;
       totalVolume += valueETH;
     });
 
-    // ✅ CATEGORY LOGIC (YOUR EXACT RANGE)
+    // 🐋 Category Logic (Your Range)
     let category = "🦐 Shrimp";
 
     if (totalVolume >= 5) {
@@ -56,11 +64,11 @@ export default async function handler(
       address,
       totalVolumeETH: totalVolume.toFixed(4),
       category,
-      transactionCount: transactions.length,
-      transactions: transactions.slice(-10).reverse(), // last 10
+      transactionCount: allTx.length,
+      transactions: allTx.slice(-10).reverse(),
     });
 
   } catch (error) {
-    return res.status(500).json({ error: "Failed to fetch wallet data" });
+    return res.status(500).json({ error: "Failed to fetch Base wallet data" });
   }
 }
