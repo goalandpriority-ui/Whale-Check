@@ -1,15 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-type Data = {
-  address: string;
-  totalVolume: number;
-  txCount: number;
-  category: string;
-};
-
-export default async function handler(
+export default function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Data | { error: string }>
+  res: NextApiResponse
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -21,26 +14,24 @@ export default async function handler(
     return res.status(400).json({ error: "Address required" });
   }
 
-  // 🔥 Temporary demo logic (you can replace with real RPC later)
-  const txCount = 250; 
-  const totalVolume = 120; // ETH
+  // 🔥 Simulated real values (Replace later with API)
+  const volumeUSD = 3000;        // example $3000
+  const transactions = 5200;     // example 5000+ tx
 
   let category = "🦐 Shrimp";
 
-  if (totalVolume >= 1000) {
-    category = "🐳 Big Whale";
-  } else if (totalVolume >= 200) {
-    category = "🐋 Whale";
-  } else if (totalVolume >= 50) {
+  if (volumeUSD >= 100000 || transactions >= 5000) {
+    category = "🐋 Big Whale";
+  } else if (volumeUSD >= 10000 || transactions >= 1000) {
+    category = "🐳 Whale";
+  } else if (volumeUSD >= 1000 || transactions >= 100) {
     category = "🐬 Dolphin";
-  } else {
-    category = "🦐 Shrimp";
   }
 
-  res.status(200).json({
+  return res.status(200).json({
     address,
-    totalVolume,
-    txCount,
+    volumeUSD,
+    transactions,
     category,
   });
 }
