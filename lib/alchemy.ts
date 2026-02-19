@@ -1,8 +1,10 @@
-import { Alchemy, Network } from "alchemy-sdk";
+// lib/alchemy.ts
+import { Alchemy, Network } from 'alchemy-sdk';
 
-const config = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_RPC?.split("/v2/")[1],
-  network: Network.ETH_MAINNET
+// Settings for Alchemy SDK
+const settings = {
+  apiKey: process.env.ALCHEMY_RPC || '', // from env.local
+  network: Network.BASE_MAINNET,        // Base chain
 };
 
-export const alchemy = new Alchemy(config);
+export const alchemy = new Alchemy(settings);
