@@ -1,9 +1,10 @@
 import './globals.css'
-import Providers from '../components/Providers'
+import type { Metadata } from 'next'
+import { Providers } from '@/components/Providers'
 
-export const metadata = {
-  title: 'Whale Check',
-  description: 'Wallet Analyzer',
+export const metadata: Metadata = {
+  title: 'Whale Wallet Analyzer',
+  description: 'Analyze Ethereum wallets and detect whale status',
 }
 
 export default function RootLayout({
