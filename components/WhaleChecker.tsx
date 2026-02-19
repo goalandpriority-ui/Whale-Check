@@ -2,102 +2,96 @@
 'use client'
 
 import { useState } from 'react'
-import { Alchemy, Network, AssetTransfersCategory } from 'alchemy-sdk'
+import { Alchemy, Network } from 'alchemy-sdk'
 
-// Alchemy SDK config
-const alchemy = new Alchemy({
-  apiKey: process.env.ALCHEMY_RPC!, // .env.local la irukura key
-  network: Network.ETH_MAINNET, // Base chain ku if needed, replace Network.BASE_MAINNET
-})
-
-interface Transfer {
+interface TokenTransfer {
   blockNum: string
   from: string
   to: string
   value: string
-  tokenSymbol: string
+  asset: string
 }
 
-export default function WhaleChecker() {
-  const [address, setAddress] = useState('')
+interface WhaleCheckerProps {
+  address: string
+}
+
+const settings = {
+  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '', // .env.local la NEXT_PUBLIC_ALCHEMY_API_KEY
+  network: Network.ETH_MAINNET, // Base la irundha Network.BASE_MAINNET
+}
+
+const alchemy = new Alchemy(settings)
+
+export default function WhaleChecker({ address }: WhaleCheckerProps) {
   const [loading, setLoading] = useState(false)
-  const [transfers, setTransfers] = useState<Transfer[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [transfers, setTransfers] = useState<TokenTransfer[]>([])
+  const [error, setError] = useState('')
 
-  const handleAnalyze = async () => {
-    if (!address) return
+  const fetchTransfers = async () => {
     setLoading(true)
-    setError(null)
-    setTransfers([])
-
+    setError('')
     try {
-      // 1️⃣ ERC20 Transfers fetch
-      const response = await alchemy.core.getAssetTransfers({
+      const response = await alchemy.transfers.getTransfers({
         fromAddress: address,
         toAddress: address,
-        category: [AssetTransfersCategory.ERC20],
-        fromBlock: '0x0', // fetch from genesis
       })
-
-      const formattedTransfers: Transfer[] = response.transfers.map((t: any) => ({
+      const tokenTransfers: TokenTransfer[] = response.transfers.map((t) => ({
         blockNum: t.blockNum,
         from: t.from,
         to: t.to,
         value: t.value,
-        tokenSymbol: t.asset,
+        asset: t.asset,
       }))
-
-      setTransfers(formattedTransfers)
+      setTransfers(tokenTransfers)
     } catch (err: any) {
       console.error(err)
-      setError(err.message || 'Something went wrong')
-    } finally {
-      setLoading(false)
+      setError('Failed to fetch token transfers')
     }
+    setLoading(false)
   }
 
   return (
-    <div className="p-4 bg-gray-100 rounded-md max-w-md mx-auto mt-10">
-      <h2 className="text-xl font-bold mb-4">🐋 Base Whale Checker</h2>
-
-      <input
-        type="text"
-        placeholder="Enter wallet address"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        className="w-full p-2 border border-gray-300 rounded mb-4"
-      />
-
+    <div className="p-4 border rounded-md shadow-md">
+      <h2 className="text-xl font-bold mb-2">Whale Checker</h2>
+      <p className="mb-2">Address: {address}</p>
       <button
-        onClick={handleAnalyze}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+        onClick={fetchTransfers}
         disabled={loading}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
       >
-        {loading ? 'Analyzing...' : 'Analyze Wallet'}
+        {loading ? 'Fetching...' : 'Check Transfers'}
       </button>
 
-      {error && <p className="text-red-500 mt-4">{error}</p>}
+      {error && <p className="text-red-500 mt-2">{error}</p>}
 
       {transfers.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-2">ERC20 Transfers</h3>
-          <ul className="space-y-2 max-h-64 overflow-y-auto">
-            {transfers.map((t, idx) => (
-              <li key={idx} className="p-2 bg-white border rounded">
-                <p>
-                  <strong>{t.tokenSymbol}</strong>: {t.value}
-                </p>
-                <p>
-                  From: {t.from} <br /> To: {t.to} <br /> Block: {parseInt(t.blockNum, 16)}
-                </p>
-              </li>
+        <table className="table-auto mt-4 w-full border">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="px-2 py-1">Block</th>
+              <th className="px-2 py-1">From</th>
+              <th className="px-2 py-1">To</th>
+              <th className="px-2 py-1">Asset</th>
+              <th className="px-2 py-1">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transfers.map((t, i) => (
+              <tr key={i} className="border-t">
+                <td className="px-2 py-1">{t.blockNum}</td>
+                <td className="px-2 py-1">{t.from}</td>
+                <td className="px-2 py-1">{t.to}</td>
+                <td className="px-2 py-1">{t.asset}</td>
+                <td className="px-2 py-1">{t.value}</td>
+              </tr>
             ))}
-          </ul>
-        </div>
+          </tbody>
+        </table>
       )}
 
       {transfers.length === 0 && !loading && !error && (
-        <p className="mt-4 text-gray-500">No transfers found 💤</p>
+        <p className="mt-2 text-gray-500">No transfers found 💤</p>
       )}
     </div>
   )
