@@ -1,9 +1,4 @@
 import { NextResponse } from "next/server";
-import { ethers } from "ethers";
-
-const provider = new ethers.JsonRpcProvider(
-  process.env.ALCHEMY_RPC!
-);
 
 export async function GET(req: Request) {
   try {
@@ -17,37 +12,46 @@ export async function GET(req: Request) {
       );
     }
 
-    const latestBlock = await provider.getBlockNumber();
-    const fromBlock = latestBlock - 50000;
+    const response = await fetch(process.env.ALCHEMY_RPC!, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "alchemy_getAssetTransfers",
+        params: [
+          {
+            fromBlock: "0x0",
+            toBlock: "latest",
+            fromAddress: address,
+            category: ["external", "erc20"],
+            withMetadata: false,
+            excludeZeroValue: true,
+          },
+        ],
+      }),
+    });
 
-    let totalVolume = 0n;
-    let txCount = 0;
+    const data = await response.json();
 
-    // 🔥 Scan blocks manually (native ETH transfers)
-    for (let i = fromBlock; i <= latestBlock; i++) {
-      const block = await provider.getBlock(i, true);
+    const transfers = data.result?.transfers || [];
 
-      if (!block || !block.transactions) continue;
+    let totalVolume = 0;
+    let txCount = transfers.length;
 
-      block.transactions.forEach((tx: any) => {
-        if (
-          tx.from?.toLowerCase() === address.toLowerCase() ||
-          tx.to?.toLowerCase() === address.toLowerCase()
-        ) {
-          totalVolume += BigInt(tx.value);
-          txCount++;
-        }
-      });
-    }
+    transfers.forEach((tx: any) => {
+      if (tx.value) {
+        totalVolume += Number(tx.value);
+      }
+    });
 
-    const formattedVolume = ethers.formatEther(totalVolume);
-
-    const isWhale =
-      totalVolume > ethers.parseEther("100"); // 🔥 100 ETH whale threshold
+    const isWhale = totalVolume > 100; // 100 ETH threshold example
 
     return NextResponse.json({
       transactions: txCount,
-      volume: formattedVolume,
+      volume: totalVolume,
       whale: isWhale,
     });
 
