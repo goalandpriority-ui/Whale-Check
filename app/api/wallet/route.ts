@@ -5,16 +5,6 @@ const provider = new ethers.JsonRpcProvider(
   process.env.ALCHEMY_RPC!
 );
 
-// 🔥 Change token if needed (Currently USDC on Base)
-const TOKEN_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-
-// USDC decimals = 6
-const TOKEN_DECIMALS = 6;
-
-const ERC20_ABI = [
-  "event Transfer(address indexed from, address indexed to, uint256 value)"
-];
-
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -28,50 +18,36 @@ export async function GET(req: Request) {
     }
 
     const latestBlock = await provider.getBlockNumber();
-    const fromBlock = latestBlock - 100000; // 🔥 Scan larger range
-
-    const topic = ethers.id("Transfer(address,address,uint256)");
-    const paddedAddress = ethers.zeroPadValue(address, 32);
-
-    // ✅ Incoming Transfers
-    const incoming = await provider.getLogs({
-      address: TOKEN_ADDRESS,
-      fromBlock,
-      toBlock: latestBlock,
-      topics: [topic, null, paddedAddress],
-    });
-
-    // ✅ Outgoing Transfers
-    const outgoing = await provider.getLogs({
-      address: TOKEN_ADDRESS,
-      fromBlock,
-      toBlock: latestBlock,
-      topics: [topic, paddedAddress],
-    });
-
-    const allLogs = [...incoming, ...outgoing];
-
-    const iface = new ethers.Interface(ERC20_ABI);
+    const fromBlock = latestBlock - 50000;
 
     let totalVolume = 0n;
+    let txCount = 0;
 
-    allLogs.forEach((log) => {
-      try {
-        const parsed = iface.parseLog(log);
-        if (parsed) {
-          totalVolume += parsed.args.value as bigint;
+    // 🔥 Scan blocks manually (native ETH transfers)
+    for (let i = fromBlock; i <= latestBlock; i++) {
+      const block = await provider.getBlock(i, true);
+
+      if (!block || !block.transactions) continue;
+
+      block.transactions.forEach((tx: any) => {
+        if (
+          tx.from?.toLowerCase() === address.toLowerCase() ||
+          tx.to?.toLowerCase() === address.toLowerCase()
+        ) {
+          totalVolume += BigInt(tx.value);
+          txCount++;
         }
-      } catch {
-        // ignore invalid logs
-      }
-    });
+      });
+    }
+
+    const formattedVolume = ethers.formatEther(totalVolume);
 
     const isWhale =
-      totalVolume > ethers.parseUnits("100000", TOKEN_DECIMALS);
+      totalVolume > ethers.parseEther("100"); // 🔥 100 ETH whale threshold
 
     return NextResponse.json({
-      transactions: allLogs.length,
-      volume: ethers.formatUnits(totalVolume, TOKEN_DECIMALS),
+      transactions: txCount,
+      volume: formattedVolume,
       whale: isWhale,
     });
 
