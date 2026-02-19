@@ -1,14 +1,15 @@
-// lib/wagmi.ts
+'use client'
+
 import { createConfig, http } from 'wagmi'
-import { mainnet } from 'wagmi/chains'
+import { base } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
 export const wagmiConfig = createConfig({
-  chains: [mainnet],
-  transports: {
-    [mainnet.id]: http(),
-  },
+  chains: [base],
   connectors: [
     injected(),
   ],
+  transports: {
+    [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC),
+  },
 })
