@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Providers } from '@/components/Providers'
+import { Providers } from './providers'   // ✅ FIXED PATH
 
 export const metadata: Metadata = {
   title: 'Whale Wallet Analyzer',
