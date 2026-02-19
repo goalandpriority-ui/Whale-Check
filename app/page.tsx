@@ -1,68 +1,56 @@
-"use client";
+'use client'
 
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { injected } from 'wagmi/connectors'
+import WhaleChecker from '../components/WhaleChecker'
 
-export default function Home() {
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
+export default function HomePage() {
+  const { address, isConnected } = useAccount()
+  const { connect } = useConnect()
+  const { disconnect } = useDisconnect()
 
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!address) return;
+    if (!address) return
 
     const fetchData = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const res = await fetch(`/api/wallet?address=${address}`);
-        const result = await res.json();
-        setData(result);
+        const res = await fetch(`/api/wallet?address=${address}`)
+        const result = await res.json()
+        setData(result)
       } catch (err) {
-        console.error(err);
+        console.error(err)
       }
-      setLoading(false);
-    };
+      setLoading(false)
+    }
 
-    fetchData();
-  }, [address]);
+    fetchData()
+  }, [address])
 
   return (
-    <main style={{ padding: 40, fontFamily: "sans-serif" }}>
-      <h1>Whale Check 🐋</h1>
+    <main className="min-h-screen flex flex-col items-center justify-start p-8 bg-gray-50">
+      <h1 className="text-3xl font-bold mb-6">Base Whale Checker 🐋</h1>
 
       {!isConnected ? (
         <button
           onClick={() => connect({ connector: injected() })}
-          style={{
-            padding: "10px 20px",
-            background: "black",
-            color: "white",
-            borderRadius: 8,
-            cursor: "pointer",
-          }}
+          className="px-6 py-2 bg-black text-white rounded hover:bg-gray-800"
         >
           Connect Wallet
         </button>
       ) : (
         <>
-          <p>
+          <p className="mb-2">
             <strong>Connected:</strong> {address}
           </p>
 
           <button
             onClick={() => disconnect()}
-            style={{
-              padding: "6px 12px",
-              marginBottom: 20,
-              background: "red",
-              color: "white",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}
+            className="mb-4 px-4 py-1 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Disconnect
           </button>
@@ -70,25 +58,15 @@ export default function Home() {
           {loading && <p>Checking wallet activity...</p>}
 
           {data && (
-            <div
-              style={{
-                marginTop: 20,
-                padding: 20,
-                border: "1px solid #ddd",
-                borderRadius: 12,
-                maxWidth: 500,
-              }}
-            >
-              <h2>📊 Wallet Stats</h2>
-
+            <div className="border p-4 rounded-lg max-w-md w-full bg-white shadow">
+              <h2 className="text-xl font-semibold mb-2">📊 Wallet Stats</h2>
               <p>
-                <strong>Total Transactions:</strong>{" "}
-                {data.totalTransactions}
+                <strong>Total Transactions:</strong> {data.totalTransactions}
               </p>
 
-              <hr />
+              <hr className="my-2" />
 
-              <h3>💎 ETH Activity</h3>
+              <h3 className="font-semibold">💎 ETH Activity</h3>
               <p>
                 <strong>ETH Volume:</strong> {data.ethVolume} ETH
               </p>
@@ -99,30 +77,28 @@ export default function Home() {
                 <strong>Current ETH Price:</strong> ${data.ethPrice}
               </p>
 
-              <hr />
+              <hr className="my-2" />
 
-              <h3>🪙 ERC20 Activity</h3>
+              <h3 className="font-semibold">🪙 ERC20 Activity</h3>
               <p>
-                <strong>ERC20 Transactions:</strong>{" "}
-                {data.erc20Transactions}
+                <strong>ERC20 Transactions:</strong> {data.erc20Transactions}
               </p>
               <p>
-                <strong>ERC20 USD Volume:</strong> $
-                {data.erc20UsdVolume}
+                <strong>ERC20 USD Volume:</strong> ${data.erc20UsdVolume}
               </p>
 
-              <hr />
+              <hr className="my-2" />
 
-              <h2>
-                🐋 Whale Status:{" "}
-                <span style={{ color: "#2563eb" }}>
-                  {data.status}
-                </span>
+              <h2 className="text-blue-600 font-bold">
+                🐋 Whale Status: {data.status}
               </h2>
             </div>
           )}
+
+          {/* WhaleChecker for live token transfers */}
+          {address && <WhaleChecker address={address} />}
         </>
       )}
     </main>
-  );
+  )
 }
