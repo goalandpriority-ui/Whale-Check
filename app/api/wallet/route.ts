@@ -12,7 +12,8 @@ export async function GET(req: Request) {
       );
     }
 
-    const response = await fetch(process.env.ALCHEMY_RPC!, {
+    // 1️⃣ Fetch ETH transfers from Alchemy
+    const alchemyRes = await fetch(process.env.ALCHEMY_RPC!, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -26,38 +27,69 @@ export async function GET(req: Request) {
             fromBlock: "0x0",
             toBlock: "latest",
             fromAddress: address,
-            category: ["external", "erc20"],
+            category: ["external"], // ETH only
             excludeZeroValue: true,
           },
         ],
       }),
     });
 
-    const data = await response.json();
+    const alchemyData = await alchemyRes.json();
 
-    if (!data.result) {
+    if (!alchemyData.result) {
       return NextResponse.json(
         { error: "Alchemy RPC error" },
         { status: 500 }
       );
     }
 
-    const transfers = data.result.transfers || [];
+    const transfers = alchemyData.result.transfers || [];
 
-    let totalVolume = 0;
+    let totalEth = 0;
 
     for (const tx of transfers) {
       if (tx.value) {
-        totalVolume += parseFloat(tx.value);
+        totalEth += parseFloat(tx.value); // already in ETH
       }
     }
 
-    const isWhale = totalVolume > 100; // adjust threshold if needed
+    // 2️⃣ Get Current ETH Price (USD)
+    const priceRes = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    );
+
+    const priceData = await priceRes.json();
+
+    const ethPrice = priceData?.ethereum?.usd;
+
+    if (!ethPrice) {
+      return NextResponse.json(
+        { error: "Failed to fetch ETH price" },
+        { status: 500 }
+      );
+    }
+
+    // 3️⃣ Convert ETH → USD
+    const totalUsd = totalEth * ethPrice;
+
+    // 4️⃣ Whale Tier Classification
+    let status = "Small Fish 🐟";
+
+    if (totalUsd >= 10000) {
+      status = "Mega Whale 🦈";
+    } else if (totalUsd >= 5000) {
+      status = "Whale 🐋";
+    } else if (totalUsd >= 1000) {
+      status = "Dolphin 🐬";
+    }
 
     return NextResponse.json({
+      wallet: address,
       transactions: transfers.length,
-      volume: totalVolume,
-      whale: isWhale,
+      ethVolume: totalEth.toFixed(4),
+      usdVolume: totalUsd.toFixed(2),
+      ethPrice,
+      status,
     });
 
   } catch (err: any) {
