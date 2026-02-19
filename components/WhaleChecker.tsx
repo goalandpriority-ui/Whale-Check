@@ -17,7 +17,7 @@ interface WhaleCheckerProps {
 
 const settings = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '',
-  network: Network.BASE_MAINNET, // Base chain
+  network: Network.BASE_MAINNET,
 }
 
 const alchemy = new Alchemy(settings)
@@ -31,16 +31,20 @@ export default function WhaleChecker({ address }: WhaleCheckerProps) {
     setLoading(true)
     setError('')
     try {
-      const response = await alchemy.transfers.getTransfers({
+      const response = await alchemy.core.getAssetTransfers({
         fromAddress: address,
         toAddress: address,
+        category: ['external', 'erc20', 'erc721', 'erc1155'],
+        order: 'desc',
+        maxCount: 25,
       })
-      const tokenTransfers: TokenTransfer[] = response.transfers.map((t) => ({
+
+      const tokenTransfers: TokenTransfer[] = response.transfers.map((t: any) => ({
         blockNum: t.blockNum,
         from: t.from,
         to: t.to,
-        value: t.value,
-        asset: t.asset,
+        value: t.value || '0',
+        asset: t.asset || t.tokenSymbol || 'ETH',
       }))
       setTransfers(tokenTransfers)
     } catch (err: any) {
