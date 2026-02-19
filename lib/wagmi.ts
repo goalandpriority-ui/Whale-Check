@@ -1,25 +1,25 @@
 'use client'
 
-import { createConfig, configureChains } from 'wagmi'
+import { createConfig, mainnet, WagmiConfig } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { publicClient } from 'wagmi'
-import {
-  injectedWallet,
-  metaMaskWallet,
-  walletConnectWallet,
-} from '@wagmi/connectors'
+import { publicClient, webSocketPublicClient } from '@wagmi/core'
+import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
+import { InjectedConnector } from 'wagmi/connectors/injected'
 
-// Configure chains
-const { chains } = configureChains([base], [])
-
+// Connectors
 export const wagmiConfig = createConfig({
+  autoConnect: true,
   connectors: [
-    injectedWallet({ chains }),
-    metaMaskWallet({ chains }),
-    walletConnectWallet({
-      chains,
-      projectId: 'c56357101a152b7e2d6b4c3b8f12345', // Replace with your WalletConnect Project ID
+    new MetaMaskConnector({ chains: [base] }),
+    new WalletConnectConnector({
+      chains: [base],
+      options: {
+        projectId: 'c56357101a152b7e2d6b4c3b8f12345', // replace your WalletConnect ID
+      },
     }),
+    new InjectedConnector({ chains: [base] }),
   ],
   publicClient,
+  webSocketPublicClient,
 })
