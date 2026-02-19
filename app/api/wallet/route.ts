@@ -27,7 +27,6 @@ export async function GET(req: Request) {
             toBlock: "latest",
             fromAddress: address,
             category: ["external", "erc20"],
-            withMetadata: false,
             excludeZeroValue: true,
           },
         ],
@@ -36,28 +35,34 @@ export async function GET(req: Request) {
 
     const data = await response.json();
 
-    const transfers = data.result?.transfers || [];
+    if (!data.result) {
+      return NextResponse.json(
+        { error: "Alchemy RPC error" },
+        { status: 500 }
+      );
+    }
+
+    const transfers = data.result.transfers || [];
 
     let totalVolume = 0;
-    let txCount = transfers.length;
 
-    transfers.forEach((tx: any) => {
+    for (const tx of transfers) {
       if (tx.value) {
-        totalVolume += Number(tx.value);
+        totalVolume += parseFloat(tx.value);
       }
-    });
+    }
 
-    const isWhale = totalVolume > 100; // 100 ETH threshold example
+    const isWhale = totalVolume > 100; // adjust threshold if needed
 
     return NextResponse.json({
-      transactions: txCount,
+      transactions: transfers.length,
       volume: totalVolume,
       whale: isWhale,
     });
 
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message },
+      { error: err.message || "Server error" },
       { status: 500 }
     );
   }
