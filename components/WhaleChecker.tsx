@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
-import { alchemyApiKey } from '../lib/config' // or NEXT_PUBLIC_ALCHEMY_KEY
+import { alchemyApiKey } from '../lib/config'
 import { Alchemy, Network } from 'alchemy-sdk'
 
 interface WalletStats {
@@ -27,42 +27,42 @@ export default function WhaleChecker({ address }: { address: string }) {
   useEffect(() => {
     if (!address) return
 
-    const provider = new ethers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_BASE_RPC
-    )
+    const provider = new ethers.JsonRpcProvider(alchemyApiKey)
 
     const alchemy = new Alchemy({
       apiKey: alchemyApiKey,
-      network: Network.ETH_MAINNET, // change if Base chain
+      network: Network.ETH_MAINNET, // Use base chain if needed
     })
 
     const fetchData = async () => {
       try {
-        // 1️⃣ ETH Balance
+        // ETH Balance
         const balance = await provider.getBalance(address)
         const ethBalance = ethers.formatEther(balance)
 
-        // 2️⃣ Total Transactions
+        // Total Transactions
         const totalTx = await provider.getTransactionCount(address)
 
-        // 3️⃣ ERC20 Transfers via Alchemy
+        // ERC20 Transfers
         const erc20Transfers = await alchemy.core.getTokenTransfers({
           fromAddress: address,
           toAddress: address,
         })
         const erc20Tx = erc20Transfers.transfers.length
 
-        // 4️⃣ ETH USD Value (use static or Coingecko API)
-        const ethPrice = 1976.55 // or fetch from API
+        // ETH USD Value
+        const ethPrice = 1976.55 // Hardcoded, can fetch API
         const ethUsd = (parseFloat(ethBalance) * ethPrice).toFixed(2)
 
-        // 5️⃣ ERC20 USD Volume (simplified, sum of values)
+        // ERC20 USD Volume
         let erc20Usd = 0
         erc20Transfers.transfers.forEach((t) => {
-          erc20Usd += parseFloat(ethers.formatUnits(t.value, t.token.decimals)) * (t.token.price?.usd || 0)
+          erc20Usd +=
+            parseFloat(ethers.formatUnits(t.value, t.token.decimals)) *
+            (t.token.price?.usd || 0)
         })
 
-        // 6️⃣ Whale Status
+        // Whale Status
         const whaleStatus =
           parseFloat(ethBalance) > 10
             ? 'Whale'
