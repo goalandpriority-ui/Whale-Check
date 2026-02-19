@@ -12,7 +12,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // 1️⃣ Fetch ETH transfers from Alchemy
+    // 🔥 Fetch ETH + ERC20 transfers from Alchemy
     const alchemyRes = await fetch(process.env.ALCHEMY_RPC!, {
       method: "POST",
       headers: {
@@ -27,52 +27,51 @@ export async function GET(req: Request) {
             fromBlock: "0x0",
             toBlock: "latest",
             fromAddress: address,
-            category: ["external"], // ETH only
+            category: ["external", "internal", "erc20"],
             excludeZeroValue: true,
+            withMetadata: true,
           },
         ],
       }),
     });
 
     const alchemyData = await alchemyRes.json();
-
-    if (!alchemyData.result) {
-      return NextResponse.json(
-        { error: "Alchemy RPC error" },
-        { status: 500 }
-      );
-    }
-
-    const transfers = alchemyData.result.transfers || [];
+    const transfers = alchemyData?.result?.transfers || [];
 
     let totalEth = 0;
+    let erc20Transactions = 0;
+    let totalErc20Usd = 0;
 
     for (const tx of transfers) {
-      if (tx.value) {
-        totalEth += parseFloat(tx.value); // already in ETH
+      // ✅ ETH Transfers
+      if (tx.category === "external" || tx.category === "internal") {
+        if (tx.value) {
+          totalEth += parseFloat(tx.value);
+        }
+      }
+
+      // ✅ ERC20 Transfers
+      if (tx.category === "erc20") {
+        erc20Transactions++;
+
+        // USD value if available
+        if (tx.metadata?.valueUsd) {
+          totalErc20Usd += parseFloat(tx.metadata.valueUsd);
+        }
       }
     }
 
-    // 2️⃣ Get Current ETH Price (USD)
+    // 🔥 Get ETH price
     const priceRes = await fetch(
       "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
     );
-
     const priceData = await priceRes.json();
+    const ethPrice = priceData?.ethereum?.usd || 0;
 
-    const ethPrice = priceData?.ethereum?.usd;
+    const totalEthUsd = totalEth * ethPrice;
+    const totalUsd = totalEthUsd + totalErc20Usd;
 
-    if (!ethPrice) {
-      return NextResponse.json(
-        { error: "Failed to fetch ETH price" },
-        { status: 500 }
-      );
-    }
-
-    // 3️⃣ Convert ETH → USD
-    const totalUsd = totalEth * ethPrice;
-
-    // 4️⃣ Whale Tier Classification
+    // 🐋 Whale Tier Logic
     let status = "Small Fish 🐟";
 
     if (totalUsd >= 10000) {
@@ -85,9 +84,18 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       wallet: address,
-      transactions: transfers.length,
+      totalTransactions: transfers.length,
+
+      // ETH
       ethVolume: totalEth.toFixed(4),
-      usdVolume: totalUsd.toFixed(2),
+      ethUsd: totalEthUsd.toFixed(2),
+
+      // ERC20
+      erc20Transactions,
+      erc20UsdVolume: totalErc20Usd.toFixed(2),
+
+      // Combined
+      totalUsd: totalUsd.toFixed(2),
       ethPrice,
       status,
     });
