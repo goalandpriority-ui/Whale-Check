@@ -12,4 +12,5 @@ export const wagmiConfig = createConfig({
   transports: {
     [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC),
   },
+  ssr: false, // 🔥 IMPORTANT — prevents build-time ENS crash
 })
