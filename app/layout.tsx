@@ -1,9 +1,9 @@
-import "./globals.css"
-import Providers from "@/components/Providers"
+import './globals.css'
+import { Providers } from '../components/Providers'
 
 export const metadata = {
-  title: "Base Whale Check",
-  description: "Whale tracker"
+  title: 'Whale Check',
+  description: 'Wallet Analyzer',
 }
 
 export default function RootLayout({
