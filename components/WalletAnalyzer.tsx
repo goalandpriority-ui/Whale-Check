@@ -9,7 +9,6 @@ export default function WalletAnalyzer() {
 
   const { data: balance } = useBalance({
     address: address,
-    enabled: !!address,
   })
 
   const getWhaleType = (eth: number) => {
