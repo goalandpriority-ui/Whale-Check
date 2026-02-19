@@ -40,11 +40,10 @@ export default function Home() {
           {data && (
             <div>
               <p>Transactions: {data.transactions}</p>
-              <p>Total Volume: {data.volume}</p>
-              <p>
-                Whale Status:{" "}
-                {data.whale ? "🐋 Whale" : "🐟 Small Fish"}
-              </p>
+              <p>Total ETH Volume: {data.ethVolume} ETH</p>
+              <p>Total USD Volume: ${data.usdVolume}</p>
+              <p>Current ETH Price: ${data.ethPrice}</p>
+              <p>Whale Status: {data.status}</p>
             </div>
           )}
         </>
