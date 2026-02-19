@@ -1,3 +1,4 @@
+// components/WhaleChecker.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -27,42 +28,42 @@ export default function WhaleChecker({ address }: { address: string }) {
   useEffect(() => {
     if (!address) return
 
-    const provider = new ethers.JsonRpcProvider(alchemyApiKey)
+    const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_BASE_RPC)
 
     const alchemy = new Alchemy({
       apiKey: alchemyApiKey,
-      network: Network.ETH_MAINNET, // Use base chain if needed
+      network: Network.ETH_MAINNET, // adjust if using Base chain
     })
 
     const fetchData = async () => {
       try {
-        // ETH Balance
+        // 1️⃣ ETH Balance
         const balance = await provider.getBalance(address)
         const ethBalance = ethers.formatEther(balance)
 
-        // Total Transactions
+        // 2️⃣ Total Transactions
         const totalTx = await provider.getTransactionCount(address)
 
-        // ERC20 Transfers
-        const erc20Transfers = await alchemy.core.getTokenTransfers({
+        // 3️⃣ ERC20 Transfers
+        const erc20Transfers = await alchemy.transfers.getTransfers({
           fromAddress: address,
           toAddress: address,
         })
         const erc20Tx = erc20Transfers.transfers.length
 
-        // ETH USD Value
-        const ethPrice = 1976.55 // Hardcoded, can fetch API
+        // 4️⃣ ETH USD Value
+        const ethPrice = 1976.55 // replace with API if needed
         const ethUsd = (parseFloat(ethBalance) * ethPrice).toFixed(2)
 
-        // ERC20 USD Volume
+        // 5️⃣ ERC20 USD Volume (simplified)
         let erc20Usd = 0
         erc20Transfers.transfers.forEach((t) => {
-          erc20Usd +=
-            parseFloat(ethers.formatUnits(t.value, t.token.decimals)) *
-            (t.token.price?.usd || 0)
+          const value = parseFloat(ethers.formatUnits(t.value, t.token.decimals))
+          const price = t.token.price?.usd || 0
+          erc20Usd += value * price
         })
 
-        // Whale Status
+        // 6️⃣ Whale Status
         const whaleStatus =
           parseFloat(ethBalance) > 10
             ? 'Whale'
