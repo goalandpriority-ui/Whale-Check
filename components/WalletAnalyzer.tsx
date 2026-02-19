@@ -1,43 +1,52 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { useAccount, useBalance, useConnect } from 'wagmi'
-import { MetaMaskConnector, CoinbaseWalletConnector, InjectedConnector } from '@wagmi/core/connectors'
-import { wagmiConfig } from '../lib/wagmi'
 
 export default function WalletAnalyzer() {
-  const { connect, connectors } = useConnect()
   const { address, isConnected } = useAccount()
-  const { data: balanceData } = useBalance({ address })
-  
-  const [ethBalance, setEthBalance] = useState('0.0000')
+  const { connect, connectors } = useConnect()
 
-  useEffect(() => {
-    if (balanceData?.formatted) {
-      setEthBalance(parseFloat(balanceData.formatted).toFixed(4))
-    }
-  }, [balanceData])
+  const { data: balance } = useBalance({
+    address: address,
+    enabled: !!address,
+  })
+
+  const getWhaleType = (eth: number) => {
+    if (eth >= 1000) return '🐋 Big Whale'
+    if (eth >= 100) return '🐳 Whale'
+    if (eth >= 10) return '🐬 Dolphin'
+    return '🦐 Shrimp'
+  }
 
   return (
-    <div className="p-6 bg-gray-900 text-white rounded-lg w-96">
-      <h2 className="text-xl font-bold mb-4">🐋 Base Wallet Analyzer</h2>
+    <div style={{ padding: 20 }}>
+      <h1>Whale Wallet Analyzer</h1>
 
-      {isConnected ? (
+      {!isConnected && (
         <div>
-          <p><strong>Address:</strong> {address}</p>
-          <p><strong>ETH Balance:</strong> {ethBalance} ETH</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
           {connectors.map((connector) => (
             <button
-              key={connector.id}
+              key={connector.uid}
               onClick={() => connect({ connector })}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+              style={{ marginRight: 10 }}
             >
-              Connect with {connector.name}
+              Connect {connector.name}
             </button>
           ))}
+        </div>
+      )}
+
+      {isConnected && (
+        <div>
+          <p><strong>Address:</strong> {address}</p>
+          <p><strong>Balance:</strong> {balance?.formatted ?? 0} ETH</p>
+          <p>
+            <strong>Status:</strong>{' '}
+            {balance
+              ? getWhaleType(Number(balance.formatted))
+              : 'Loading...'}
+          </p>
         </div>
       )}
     </div>
