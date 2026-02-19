@@ -1,4 +1,4 @@
-'use client'
+use client'
 
 import { WagmiProvider } from 'wagmi'
 import { wagmiConfig } from '../lib/wagmi'
