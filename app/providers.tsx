@@ -1,8 +1,12 @@
 'use client'
 
-import { WagmiConfig } from 'wagmi'
+import { WagmiProvider } from 'wagmi'
 import { wagmiConfig } from '../lib/wagmi'
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <WagmiConfig config={wagmiConfig}>{children}</WagmiConfig>
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      {children}
+    </WagmiProvider>
+  )
 }
