@@ -1,4 +1,3 @@
-// components/WhaleChecker.tsx
 'use client'
 
 import { useState } from 'react'
@@ -17,8 +16,8 @@ interface WhaleCheckerProps {
 }
 
 const settings = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '', // .env.local la NEXT_PUBLIC_ALCHEMY_API_KEY
-  network: Network.ETH_MAINNET, // Base la irundha Network.BASE_MAINNET
+  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '',
+  network: Network.BASE_MAINNET, // Base chain
 }
 
 const alchemy = new Alchemy(settings)
