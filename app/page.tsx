@@ -6,7 +6,7 @@ import WhaleChecker from '../components/WhaleChecker'
 
 export default function HomePage() {
   const { address, isConnected } = useAccount()
-  const { connect } = useConnect()
+  const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
 
   const [data, setData] = useState<any>(null)
@@ -36,7 +36,7 @@ export default function HomePage() {
 
       {!isConnected ? (
         <button
-          onClick={() => connect()}
+          onClick={() => connect({ connector: connectors[0] })}
           className="px-6 py-2 bg-black text-white rounded hover:bg-gray-800"
         >
           Connect Wallet
