@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   try {
+    const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC;
+
+    if (!rpcUrl) {
+      throw new Error("NEXT_PUBLIC_BASE_RPC is missing in environment variables");
+    }
+
     const { searchParams } = new URL(req.url);
     const address = searchParams.get("address");
 
@@ -13,7 +19,7 @@ export async function GET(req: Request) {
     }
 
     // 🔥 Fetch ETH + ERC20 transfers from Alchemy
-    const alchemyRes = await fetch(process.env.ALCHEMY_RPC!, {
+    const alchemyRes = await fetch(rpcUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,6 +41,10 @@ export async function GET(req: Request) {
       }),
     });
 
+    if (!alchemyRes.ok) {
+      throw new Error("Failed to fetch data from Alchemy");
+    }
+
     const alchemyData = await alchemyRes.json();
     const transfers = alchemyData?.result?.transfers || [];
 
@@ -54,17 +64,21 @@ export async function GET(req: Request) {
       if (tx.category === "erc20") {
         erc20Transactions++;
 
-        // USD value if available
         if (tx.metadata?.valueUsd) {
           totalErc20Usd += parseFloat(tx.metadata.valueUsd);
         }
       }
     }
 
-    // 🔥 Get ETH price
+    // 🔥 Get ETH price from CoinGecko
     const priceRes = await fetch(
       "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
     );
+
+    if (!priceRes.ok) {
+      throw new Error("Failed to fetch ETH price");
+    }
+
     const priceData = await priceRes.json();
     const ethPrice = priceData?.ethereum?.usd || 0;
 
@@ -101,6 +115,8 @@ export async function GET(req: Request) {
     });
 
   } catch (err: any) {
+    console.error("API Error:", err);
+
     return NextResponse.json(
       { error: err.message || "Server error" },
       { status: 500 }
