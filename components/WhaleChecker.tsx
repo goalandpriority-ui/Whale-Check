@@ -1,7 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Alchemy, Network, AssetTransfersCategory } from 'alchemy-sdk'
+import {
+  Alchemy,
+  Network,
+  AssetTransfersCategory,
+  SortingOrder,
+} from 'alchemy-sdk'
 
 interface TokenTransfer {
   blockNum: string
@@ -15,7 +20,6 @@ interface WhaleCheckerProps {
   address: string
 }
 
-// Alchemy configuration
 const settings = {
   apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '',
   network: Network.BASE_MAINNET,
@@ -45,15 +49,15 @@ export default function WhaleChecker({ address }: WhaleCheckerProps) {
           AssetTransfersCategory.ERC721,
           AssetTransfersCategory.ERC1155,
         ],
-        order: 'desc',
-        maxCount: '0x19', // 25 in hex
+        order: SortingOrder.DESCENDING,
+        maxCount: 25, // now number, not hex
       })
 
       const formatted: TokenTransfer[] = response.transfers.map((t) => ({
         blockNum: t.blockNum,
         from: t.from || '-',
         to: t.to || '-',
-        value: t.value?.toString() || '0',
+        value: t.value ? t.value.toString() : '0',
         asset: t.asset || 'ETH',
       }))
 
@@ -83,9 +87,7 @@ export default function WhaleChecker({ address }: WhaleCheckerProps) {
       </button>
 
       {error && (
-        <p className="text-red-500 mt-3 font-medium">
-          {error}
-        </p>
+        <p className="text-red-500 mt-3 font-medium">{error}</p>
       )}
 
       {transfers.length > 0 && (
@@ -116,9 +118,7 @@ export default function WhaleChecker({ address }: WhaleCheckerProps) {
       )}
 
       {transfers.length === 0 && !loading && !error && (
-        <p className="mt-4 text-gray-500">
-          No transfers found 💤
-        </p>
+        <p className="mt-4 text-gray-500">No transfers found 💤</p>
       )}
     </div>
   )
