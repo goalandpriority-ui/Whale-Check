@@ -1,70 +1,46 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Alchemy,
-  Network,
-  AssetTransfersCategory,
-  SortingOrder,
-} from 'alchemy-sdk'
-
-interface TokenTransfer {
-  blockNum: string
-  from: string
-  to: string
-  value: string
-  asset: string
-}
 
 interface WhaleCheckerProps {
   address: string
 }
 
-const settings = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '',
-  network: Network.BASE_MAINNET,
+interface ApiResponse {
+  wallet: string
+  totalTransactions: number
+  ethVolume: string
+  ethUsd: string
+  erc20Transactions: number
+  erc20UsdVolume: string
+  totalUsd: string
+  ethPrice: number
+  status: string
 }
-
-const alchemy = new Alchemy(settings)
 
 export default function WhaleChecker({ address }: WhaleCheckerProps) {
   const [loading, setLoading] = useState(false)
-  const [transfers, setTransfers] = useState<TokenTransfer[]>([])
-  const [error, setError] = useState<string>('')
+  const [data, setData] = useState<ApiResponse | null>(null)
+  const [error, setError] = useState('')
 
-  const fetchTransfers = async () => {
+  const checkWhale = async () => {
     if (!address) return
 
     setLoading(true)
     setError('')
-    setTransfers([])
+    setData(null)
 
     try {
-      const response = await alchemy.core.getAssetTransfers({
-        fromAddress: address,
-        toAddress: address,
-        category: [
-          AssetTransfersCategory.EXTERNAL,
-          AssetTransfersCategory.ERC20,
-          AssetTransfersCategory.ERC721,
-          AssetTransfersCategory.ERC1155,
-        ],
-        order: SortingOrder.DESCENDING,
-        maxCount: 25, // now number, not hex
-      })
+      const res = await fetch(`/api/wallet?address=${address}`)
+      const result = await res.json()
 
-      const formatted: TokenTransfer[] = response.transfers.map((t) => ({
-        blockNum: t.blockNum,
-        from: t.from || '-',
-        to: t.to || '-',
-        value: t.value ? t.value.toString() : '0',
-        asset: t.asset || 'ETH',
-      }))
+      if (!res.ok) {
+        throw new Error(result.error || 'Something went wrong')
+      }
 
-      setTransfers(formatted)
-    } catch (err) {
-      console.error(err)
-      setError('Failed to fetch token transfers')
+      setData(result)
+    } catch (err: any) {
+      setError(err.message)
     }
 
     setLoading(false)
@@ -79,46 +55,31 @@ export default function WhaleChecker({ address }: WhaleCheckerProps) {
       </p>
 
       <button
-        onClick={fetchTransfers}
+        onClick={checkWhale}
         disabled={loading}
         className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
       >
-        {loading ? 'Fetching Transfers...' : 'Check Transfers'}
+        {loading ? 'Checking...' : 'Check Whale Status'}
       </button>
 
       {error && (
-        <p className="text-red-500 mt-3 font-medium">{error}</p>
+        <p className="text-red-500 mt-4 font-medium">{error}</p>
       )}
 
-      {transfers.length > 0 && (
-        <div className="overflow-x-auto mt-6">
-          <table className="w-full border-collapse border text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border px-3 py-2">Block</th>
-                <th className="border px-3 py-2">From</th>
-                <th className="border px-3 py-2">To</th>
-                <th className="border px-3 py-2">Asset</th>
-                <th className="border px-3 py-2">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transfers.map((t, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="border px-3 py-2">{t.blockNum}</td>
-                  <td className="border px-3 py-2 break-all">{t.from}</td>
-                  <td className="border px-3 py-2 break-all">{t.to}</td>
-                  <td className="border px-3 py-2">{t.asset}</td>
-                  <td className="border px-3 py-2">{t.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {data && (
+        <div className="mt-6 space-y-3 text-sm">
+          <div>Total Transactions: {data.totalTransactions}</div>
+          <div>ETH Volume: {data.ethVolume} ETH</div>
+          <div>ETH USD: ${data.ethUsd}</div>
+          <div>ERC20 Transactions: {data.erc20Transactions}</div>
+          <div>ERC20 USD Volume: ${data.erc20UsdVolume}</div>
+          <div className="font-bold text-lg">
+            Total USD Volume: ${data.totalUsd}
+          </div>
+          <div className="text-xl font-bold mt-2">
+            Status: {data.status}
+          </div>
         </div>
-      )}
-
-      {transfers.length === 0 && !loading && !error && (
-        <p className="mt-4 text-gray-500">No transfers found 💤</p>
       )}
     </div>
   )
