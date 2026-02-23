@@ -10,7 +10,6 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  // React Query client create once per app lifecycle
   const [queryClient] = useState(() => new QueryClient())
 
   return (
