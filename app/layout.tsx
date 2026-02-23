@@ -1,10 +1,10 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Providers } from './providers'   // ✅ FIXED PATH
+import Providers from './providers'   // ✅ default import
 
 export const metadata: Metadata = {
   title: 'Whale Wallet Analyzer',
-  description: 'Analyze Ethereum wallets and detect whale status',
+  description: 'Analyze Base wallet whale activity',
 }
 
 export default function RootLayout({
