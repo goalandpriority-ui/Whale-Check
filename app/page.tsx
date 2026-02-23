@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
-import { injected } from 'wagmi/connectors'
 import WhaleChecker from '../components/WhaleChecker'
 
 export default function HomePage() {
@@ -37,7 +36,7 @@ export default function HomePage() {
 
       {!isConnected ? (
         <button
-          onClick={() => connect({ connector: injected() })}
+          onClick={() => connect()}
           className="px-6 py-2 bg-black text-white rounded hover:bg-gray-800"
         >
           Connect Wallet
@@ -95,7 +94,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* WhaleChecker for live token transfers */}
           {address && <WhaleChecker address={address} />}
         </>
       )}
