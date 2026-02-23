@@ -2,15 +2,16 @@ import { createConfig, http } from 'wagmi'
 import { base } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
+const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC
+
+if (!rpcUrl) {
+  throw new Error("NEXT_PUBLIC_BASE_RPC is missing")
+}
+
 export const wagmiConfig = createConfig({
   chains: [base],
-  connectors: [
-    injected(),
-  ],
+  connectors: [injected()],
   transports: {
-    [base.id]: http(process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
-      ? `https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-      : undefined
-    ),
+    [base.id]: http(rpcUrl),
   },
 })
