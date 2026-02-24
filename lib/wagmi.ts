@@ -11,11 +11,7 @@ export const wagmiConfig = createConfig({
     walletConnect({
       projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
     }),
-    metaMask({
-      options: {
-        // optional MetaMask settings
-      },
-    }),
+    metaMask({}),
   ],
   transports: {
     [base.id]: http(),
