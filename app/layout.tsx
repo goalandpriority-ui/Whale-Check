@@ -1,13 +1,16 @@
-export const dynamic = "force-dynamic";
-
 import type { Metadata } from "next";
 import "./globals.css";
-import Providers from "./providers";
+import dynamic from "next/dynamic";
 
 export const metadata: Metadata = {
   title: "Base Whale Checker",
   description: "Check if a wallet is a whale on Base chain",
 };
+
+// 🚨 Disable SSR for Providers
+const Providers = dynamic(() => import("./providers"), {
+  ssr: false,
+});
 
 export default function RootLayout({
   children,
@@ -17,9 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
