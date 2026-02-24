@@ -1,10 +1,10 @@
-import { createConfig, http } from 'wagmi'
-import { base } from 'wagmi/chains'
-import { injected } from 'wagmi/connectors'
+import { createConfig, http } from "wagmi";
+import { base } from "wagmi/chains";
+import { injected } from "wagmi/connectors";
 
 const rpcUrl =
   process.env.NEXT_PUBLIC_BASE_RPC ||
-  'https://mainnet.base.org'  // ✅ Safe public fallback
+  "https://mainnet.base.org";
 
 export const wagmiConfig = createConfig({
   chains: [base],
@@ -12,4 +12,4 @@ export const wagmiConfig = createConfig({
   transports: {
     [base.id]: http(rpcUrl),
   },
-})
+});
