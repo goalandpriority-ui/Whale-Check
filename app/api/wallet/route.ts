@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Alchemy, Network, SortingOrder } from "alchemy-sdk";
+import { Alchemy, Network, SortingOrder, AssetTransfersCategory } from "alchemy-sdk";
 
 const config = {
   apiKey: process.env.ALCHEMY_API_KEY,
-  network: Network.ETH_MAINNET, // or testnet Network.ETH_GOERLI
+  network: Network.ETH_MAINNET, // or Network.ETH_GOERLI for testnet
 };
 
 const alchemy = new Alchemy(config);
@@ -28,7 +28,12 @@ export async function GET(req: NextRequest) {
       maxCount,
       pageKey,
       order,
-      category: ["external", "erc20", "erc721", "erc1155"],
+      category: [
+        AssetTransfersCategory.EXTERNAL,
+        AssetTransfersCategory.ERC20,
+        AssetTransfersCategory.ERC721,
+        AssetTransfersCategory.ERC1155,
+      ],
       withMetadata: true,
     });
 
