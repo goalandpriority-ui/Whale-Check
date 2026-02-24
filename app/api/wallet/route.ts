@@ -3,6 +3,8 @@ import { alchemy } from "@/lib/alchemy";
 import { AssetTransfersCategory } from "alchemy-sdk";
 
 export async function GET(req: NextRequest) {
+  console.log("🔥 BACKEND SDK ROUTE RUNNING 🔥");
+
   try {
     const address = req.nextUrl.searchParams.get("address");
 
@@ -20,6 +22,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Fetch limited transfers (avoid timeout issues)
     const response = await alchemy.core.getAssetTransfers({
       fromBlock: "0x0",
       toBlock: "latest",
@@ -31,15 +34,22 @@ export async function GET(req: NextRequest) {
       ],
       withMetadata: true,
       excludeZeroValue: true,
+      maxCount: "0x3e8", // 1000 transfers
+      order: "desc",
     });
 
-    const transfers = response.transfers || [];
+    if (!response || !response.transfers) {
+      throw new Error("No transfer data received");
+    }
+
+    const transfers = response.transfers;
 
     let totalEth = 0;
     let erc20Transactions = 0;
     let totalErc20Usd = 0;
 
     for (const tx of transfers) {
+      // ETH transfers
       if (
         (tx.category === AssetTransfersCategory.EXTERNAL ||
           tx.category === AssetTransfersCategory.INTERNAL) &&
@@ -48,18 +58,26 @@ export async function GET(req: NextRequest) {
         totalEth += Number(tx.value);
       }
 
+      // ERC20 transfers
       if (tx.category === AssetTransfersCategory.ERC20) {
         erc20Transactions++;
-        if ((tx as any).metadata?.valueUsd) {
-          totalErc20Usd += Number((tx as any).metadata.valueUsd);
+
+        const usdValue = (tx as any)?.metadata?.valueUsd;
+        if (usdValue) {
+          totalErc20Usd += Number(usdValue);
         }
       }
     }
 
+    // Fetch ETH price from CoinGecko
     const priceRes = await fetch(
       "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
       { cache: "no-store" }
     );
+
+    if (!priceRes.ok) {
+      throw new Error("Failed to fetch ETH price");
+    }
 
     const priceData = await priceRes.json();
     const ethPrice = priceData?.ethereum?.usd ?? 0;
@@ -67,11 +85,12 @@ export async function GET(req: NextRequest) {
     const totalEthUsd = totalEth * ethPrice;
     const totalUsd = totalEthUsd + totalErc20Usd;
 
+    // 🐋 Updated Whale Classification
     let status = "Small Fish 🐟";
 
-    if (totalUsd >= 1000000) status = "Mega Whale 🦈";
-    else if (totalUsd >= 100000) status = "Whale 🐋";
-    else if (totalUsd >= 10000) status = "Shark 🦈";
+    if (totalUsd >= 10000) status = "Mega Whale 🐋";
+    else if (totalUsd >= 5000) status = "Whale 🐋";
+    else if (totalUsd >= 3000) status = "Shark 🦈";
     else if (totalUsd >= 1000) status = "Dolphin 🐬";
 
     return NextResponse.json({
@@ -86,10 +105,13 @@ export async function GET(req: NextRequest) {
       status,
     });
   } catch (error: any) {
-    console.error("API Error:", error);
+    console.error("❌ API Error:", error);
 
     return NextResponse.json(
-      { error: error?.message ?? "Failed to fetch data from Alchemy" },
+      {
+        error:
+          error?.message || "Failed to fetch data from Alchemy",
+      },
       { status: 500 }
     );
   }
