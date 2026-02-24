@@ -4,7 +4,7 @@ import { createConfig, http } from 'wagmi'
 import { base } from 'wagmi/chains'
 import { walletConnect, metaMask } from '@wagmi/connectors'
 
-// MetaMask SDK 0.33.0 compatible config
+// ✅ MetaMask SDK 0.33.0 + WalletConnect config
 export const wagmiConfig = createConfig({
   autoConnect: true,
   connectors: [
@@ -13,8 +13,7 @@ export const wagmiConfig = createConfig({
     }),
     metaMask({
       options: {
-        // MetaMask 0.33.0 uses default options
-        // Optional: you can add pollingInterval, shimDisconnect etc.
+        // optional MetaMask settings
       },
     }),
   ],
