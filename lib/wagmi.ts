@@ -2,14 +2,16 @@
 
 import { createConfig, http } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { injected } from 'wagmi/connectors'
+import { walletConnect } from '@wagmi/connectors'
 
-export const config = createConfig({
+export const wagmiConfig = createConfig({
   chains: [base],
-  connectors: [
-    injected(), // 🔥 Only injected wallet (MetaMask)
-  ],
   transports: {
-    [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC),
+    [base.id]: http(),
   },
+  connectors: [
+    walletConnect({
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
+    }),
+  ],
 })
