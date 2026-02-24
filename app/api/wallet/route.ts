@@ -1,10 +1,9 @@
-// app/api/wallet/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Alchemy, Network, SortingOrder } from "alchemy-sdk";
 
 const config = {
   apiKey: process.env.ALCHEMY_API_KEY,
-  network: Network.ETH_MAINNET, // use Network.ETH_GOERLI for testnet
+  network: Network.ETH_MAINNET, // or testnet Network.ETH_GOERLI
 };
 
 const alchemy = new Alchemy(config);
@@ -17,9 +16,11 @@ export async function GET(req: NextRequest) {
     const toBlock = searchParams.get("toBlock") || "latest";
     const pageKey = searchParams.get("pageKey") || undefined;
     const maxCount = 100;
-    const order: SortingOrder = "desc";
 
-    // ✅ Fixed: Added 'category' and 'withMetadata'
+    // ✅ TypeScript safe SortingOrder
+    const order: SortingOrder = SortingOrder.DESCENDING;
+
+    // Fetch asset transfers with metadata + category
     const res = await alchemy.core.getAssetTransfers({
       fromBlock,
       toBlock,
