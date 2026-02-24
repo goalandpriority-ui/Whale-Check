@@ -1,15 +1,15 @@
-import { createConfig, http } from "wagmi";
-import { base } from "wagmi/chains";
-import { injected } from "wagmi/connectors";
+'use client'
 
-const rpcUrl =
-  process.env.NEXT_PUBLIC_BASE_RPC ||
-  "https://mainnet.base.org";
+import { createConfig, http } from 'wagmi'
+import { base } from 'wagmi/chains'
+import { injected } from 'wagmi/connectors'
 
-export const wagmiConfig = createConfig({
+export const config = createConfig({
   chains: [base],
-  connectors: [injected()],
+  connectors: [
+    injected(), // 🔥 Only injected wallet (MetaMask)
+  ],
   transports: {
-    [base.id]: http(rpcUrl),
+    [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC),
   },
-});
+})
