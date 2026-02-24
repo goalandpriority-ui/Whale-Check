@@ -16,7 +16,7 @@
     "wagmi": "^2.9.0",
     "viem": "^2.9.0",
     "@wagmi/connectors": "^5.1.0",
-    "@metamask/sdk": "^2.6.0",
+    "@metamask/sdk": "0.33.0",
     "@react-native-async-storage/async-storage": "^1.20.0",
     "pino-pretty": "^9.3.0",
 
