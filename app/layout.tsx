@@ -1,16 +1,18 @@
-import './globals.css'
-import type { Metadata } from 'next'
-import Providers from './providers'   // ✅ default import
+export const dynamic = "force-dynamic";
+
+import type { Metadata } from "next";
+import "./globals.css";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: 'Whale Wallet Analyzer',
-  description: 'Analyze Base wallet whale activity',
-}
+  title: "Base Whale Checker",
+  description: "Check if a wallet is a whale on Base chain",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -20,5 +22,5 @@ export default function RootLayout({
         </Providers>
       </body>
     </html>
-  )
+  );
 }
