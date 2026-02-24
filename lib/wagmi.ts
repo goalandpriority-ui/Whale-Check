@@ -1,19 +1,24 @@
 'use client'
 
-import { createConfig, http } from 'wagmi'
+import { configureChains, createClient } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { walletConnect, metaMask } from '@wagmi/connectors'
+import { publicProvider } from 'wagmi/providers/public'
+import { walletConnect } from '@wagmi/connectors'
 
-// ✅ MetaMask SDK 0.33.0 + WalletConnect config
-export const wagmiConfig = createConfig({
-  autoConnect: true,
+// Configure chains + providers
+const { chains, publicClient } = configureChains(
+  [base],
+  [publicProvider()]
+)
+
+// Create wagmi client
+export const wagmiClient = createClient({
+  autoConnect: true, // v2 la valid
   connectors: [
     walletConnect({
       projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-    }),
-    metaMask({}),
+      chains
+    })
   ],
-  transports: {
-    [base.id]: http(),
-  },
+  publicClient
 })
