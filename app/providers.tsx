@@ -2,7 +2,17 @@
 
 import { WagmiConfig } from 'wagmi'
 import { wagmiConfig } from '@/lib/wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactNode } from 'react'
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  return <WagmiConfig config={wagmiConfig}>{children}</WagmiConfig>
+const queryClient = new QueryClient()
+
+export function Providers({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <WagmiConfig config={wagmiConfig}>
+        {children}
+      </WagmiConfig>
+    </QueryClientProvider>
+  )
 }
