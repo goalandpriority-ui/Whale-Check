@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { alchemy } from "@/lib/alchemy";
+import { AssetTransfersCategory } from "alchemy-sdk";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,12 +20,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 🔥 Fetch transfers using Alchemy SDK
     const response = await alchemy.core.getAssetTransfers({
       fromBlock: "0x0",
       toBlock: "latest",
       fromAddress: address,
-      category: ["external", "internal", "erc20"],
+      category: [
+        AssetTransfersCategory.EXTERNAL,
+        AssetTransfersCategory.INTERNAL,
+        AssetTransfersCategory.ERC20,
+      ],
       withMetadata: true,
       excludeZeroValue: true,
     });
@@ -37,21 +41,21 @@ export async function GET(req: NextRequest) {
 
     for (const tx of transfers) {
       if (
-        (tx.category === "external" || tx.category === "internal") &&
+        (tx.category === AssetTransfersCategory.EXTERNAL ||
+          tx.category === AssetTransfersCategory.INTERNAL) &&
         tx.value
       ) {
         totalEth += Number(tx.value);
       }
 
-      if (tx.category === "erc20") {
+      if (tx.category === AssetTransfersCategory.ERC20) {
         erc20Transactions++;
-        if (tx.metadata?.valueUsd) {
-          totalErc20Usd += Number(tx.metadata.valueUsd);
+        if ((tx as any).metadata?.valueUsd) {
+          totalErc20Usd += Number((tx as any).metadata.valueUsd);
         }
       }
     }
 
-    // 🔥 ETH price
     const priceRes = await fetch(
       "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
       { cache: "no-store" }
