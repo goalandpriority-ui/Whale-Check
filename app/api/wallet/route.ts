@@ -1,55 +1,39 @@
 // app/api/wallet/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { Alchemy, Network, SortingOrder } from "alchemy-sdk";
 
-import { NextResponse } from 'next/server';
-import { Alchemy, Network, SortingOrder } from 'alchemy-sdk';
-import { getWhaleTier } from '@/lib/whale-tier'; // make sure lib/whale-tier.ts irukku
-
-// Alchemy config
-const alchemy = new Alchemy({
+const config = {
   apiKey: process.env.ALCHEMY_API_KEY,
-  network: Network.ETH_MAINNET,
-});
+  network: Network.ETH_MAINNET, // use Network.ETH_GOERLI for testnet
+};
 
-export async function GET(req: Request) {
+const alchemy = new Alchemy(config);
+
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const fromBlock = searchParams.get('fromBlock') || '0x0';
-    const toBlock = searchParams.get('toBlock') || 'latest';
-    const pageKey = searchParams.get('pageKey') || undefined;
-    const walletAddress = searchParams.get('address'); // optional
+    const walletAddress = searchParams.get("address") || undefined;
+    const fromBlock = searchParams.get("fromBlock") || "0x0";
+    const toBlock = searchParams.get("toBlock") || "latest";
+    const pageKey = searchParams.get("pageKey") || undefined;
+    const maxCount = 100;
+    const order: SortingOrder = "desc";
 
-    // Fetch asset transfers
+    // ✅ Fixed: Added 'category' and 'withMetadata'
     const res = await alchemy.core.getAssetTransfers({
       fromBlock,
       toBlock,
-      toAddress: walletAddress || undefined,
-      maxCount: 1000,
+      toAddress: walletAddress,
+      maxCount,
       pageKey,
-      order: 'desc' as SortingOrder, // ✅ TypeScript fix
+      order,
+      category: ["external", "erc20", "erc721", "erc1155"],
+      withMetadata: true,
     });
 
-    const transfers = res.transfers ?? [];
-
-    // Sum USD volume (all tokens combined)
-    const totalUSDVolume = transfers.reduce(
-      (acc, tx) => acc + (tx.value?.usd ?? 0),
-      0
-    );
-
-    // Determine whale tier
-    const tier = getWhaleTier(totalUSDVolume);
-
-    return NextResponse.json({
-      transfers,
-      totalUSDVolume,
-      tier,
-      pageKey: res.pageKey,
-    });
-  } catch (error) {
-    console.error('Error fetching transfers:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch transfers' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, data: res });
+  } catch (err: any) {
+    console.error("Error fetching wallet transfers:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
