@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAlchemyWeb3 } from "@alch/alchemy-web3";
+import { alchemy } from "@/lib/alchemy";
 
 export async function GET(req: NextRequest) {
   try {
-    const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC;
-
-    if (!rpcUrl) {
-      return NextResponse.json(
-        { error: "NEXT_PUBLIC_BASE_RPC is missing in environment variables" },
-        { status: 500 }
-      );
-    }
-
-    const web3 = createAlchemyWeb3(rpcUrl);
-
     const address = req.nextUrl.searchParams.get("address");
+
     if (!address) {
       return NextResponse.json(
         { error: "Wallet address required" },
@@ -22,8 +12,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch normal and internal transfers
-    const transfers = await web3.alchemy.getAssetTransfers({
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      return NextResponse.json(
+        { error: "Invalid wallet address" },
+        { status: 400 }
+      );
+    }
+
+    // 🔥 Fetch transfers using Alchemy SDK
+    const response = await alchemy.core.getAssetTransfers({
       fromBlock: "0x0",
       toBlock: "latest",
       fromAddress: address,
@@ -32,31 +29,34 @@ export async function GET(req: NextRequest) {
       excludeZeroValue: true,
     });
 
-    const allTransfers = transfers.transfers || [];
+    const transfers = response.transfers || [];
 
     let totalEth = 0;
     let erc20Transactions = 0;
     let totalErc20Usd = 0;
 
-    allTransfers.forEach((tx: any) => {
+    for (const tx of transfers) {
       if (
         (tx.category === "external" || tx.category === "internal") &&
         tx.value
       ) {
         totalEth += Number(tx.value);
       }
+
       if (tx.category === "erc20") {
         erc20Transactions++;
         if (tx.metadata?.valueUsd) {
           totalErc20Usd += Number(tx.metadata.valueUsd);
         }
       }
-    });
+    }
 
-    // Get ETH price
+    // 🔥 ETH price
     const priceRes = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+      "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+      { cache: "no-store" }
     );
+
     const priceData = await priceRes.json();
     const ethPrice = priceData?.ethereum?.usd ?? 0;
 
@@ -64,14 +64,15 @@ export async function GET(req: NextRequest) {
     const totalUsd = totalEthUsd + totalErc20Usd;
 
     let status = "Small Fish 🐟";
-    if (totalUsd > 1000000) status = "Mega Whale 🦈";
-    else if (totalUsd > 100000) status = "Whale 🐋";
-    else if (totalUsd > 10000) status = "Shark 🦈";
-    else if (totalUsd > 1000) status = "Dolphin 🐬";
+
+    if (totalUsd >= 1000000) status = "Mega Whale 🦈";
+    else if (totalUsd >= 100000) status = "Whale 🐋";
+    else if (totalUsd >= 10000) status = "Shark 🦈";
+    else if (totalUsd >= 1000) status = "Dolphin 🐬";
 
     return NextResponse.json({
       wallet: address,
-      totalTransactions: allTransfers.length,
+      totalTransactions: transfers.length,
       ethVolume: totalEth.toFixed(4),
       ethUsd: totalEthUsd.toFixed(2),
       erc20Transactions,
@@ -82,8 +83,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("API Error:", error);
+
     return NextResponse.json(
-      { error: error.message || "Server error" },
+      { error: error?.message ?? "Failed to fetch data from Alchemy" },
       { status: 500 }
     );
   }
