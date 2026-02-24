@@ -1,3 +1,4 @@
+// app/api/wallet/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { alchemy } from "@/lib/alchemy";
 import { AssetTransfersCategory } from "alchemy-sdk";
@@ -5,20 +6,28 @@ import { AssetTransfersCategory } from "alchemy-sdk";
 export async function GET(req: NextRequest) {
   try {
     const address = req.nextUrl.searchParams.get("address");
+
     if (!address) {
-      return NextResponse.json({ error: "Wallet address required" }, { status: 400 });
-    }
-    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-      return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Wallet address required" },
+        { status: 400 }
+      );
     }
 
-    // Pagination setup
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      return NextResponse.json(
+        { error: "Invalid wallet address" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch all transfers (paginated)
     let transfers: any[] = [];
     let pageKey: string | undefined = undefined;
 
     do {
       const res = await alchemy.core.getAssetTransfers({
-        fromBlock: 0,
+        fromBlock: "0x0",              // string required
         toBlock: "latest",
         fromAddress: address,
         category: [
@@ -28,23 +37,29 @@ export async function GET(req: NextRequest) {
         ],
         withMetadata: true,
         excludeZeroValue: true,
-        maxCount: 1000,
+        maxCount: 1000,                 // number ok
         pageKey,
-        order: "desc",
+        order: "desc" as const,         // type-safe
       });
 
       transfers.push(...(res.transfers ?? []));
       pageKey = res.pageKey;
     } while (pageKey);
 
+    // Calculate totals
     let totalEth = 0;
     let erc20Transactions = 0;
     let totalErc20Usd = 0;
 
     for (const tx of transfers) {
-      if ((tx.category === AssetTransfersCategory.EXTERNAL || tx.category === AssetTransfersCategory.INTERNAL) && tx.value) {
+      if (
+        (tx.category === AssetTransfersCategory.EXTERNAL ||
+          tx.category === AssetTransfersCategory.INTERNAL) &&
+        tx.value
+      ) {
         totalEth += Number(tx.value);
       }
+
       if (tx.category === AssetTransfersCategory.ERC20) {
         erc20Transactions++;
         if ((tx as any).metadata?.valueUsd) {
@@ -53,6 +68,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Get ETH price in USD
     const priceRes = await fetch(
       "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
       { cache: "no-store" }
@@ -63,7 +79,7 @@ export async function GET(req: NextRequest) {
     const totalEthUsd = totalEth * ethPrice;
     const totalUsd = totalEthUsd + totalErc20Usd;
 
-    // Updated whale thresholds
+    // Determine whale status thresholds
     let status = "Small Fish 🐟";
     if (totalUsd >= 10000) status = "Mega Whale 🦈";
     else if (totalUsd >= 5000) status = "Whale 🐋";
@@ -83,6 +99,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("API Error:", error);
+
     return NextResponse.json(
       { error: error?.message ?? "Failed to fetch data from Alchemy" },
       { status: 500 }
