@@ -16,9 +16,11 @@
     "wagmi": "^2.9.0",
     "viem": "^2.9.0",
     "@wagmi/connectors": "^5.1.0",
+    "@metamask/sdk": "^2.6.0",
+    "@react-native-async-storage/async-storage": "^1.20.0",
+    "pino-pretty": "^9.3.0",
 
     "@tanstack/react-query": "^5.0.0",
-
     "alchemy-sdk": "^3.3.0",
     "ethers": "^6.11.1"
   },
